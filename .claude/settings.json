@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/cosmerito-latido.sh\" trabajando", "timeout": 10 }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/cosmerito-latido.sh\" pulso", "timeout": 10 }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/cosmerito-latido.sh\" espera", "timeout": 10 }] }
+    ]
+  }
+}

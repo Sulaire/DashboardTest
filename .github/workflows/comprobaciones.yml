@@ -1,0 +1,58 @@
+# Las comprobaciones de CLAUDE.md, solas en GitHub cada vez que alguien sube
+# algo: lint, tipos, pruebas (también las de seguridad por filas, contra un
+# Postgres de usar y tirar) y compilación. Si algo falla, sale una cruz roja.
+name: Comprobaciones
+
+on:
+  push:
+    branches: ["**"]
+    paths-ignore:
+      - "NOTAS_PARA_CLAUDE.md"
+  pull_request:
+    paths-ignore:
+      - "NOTAS_PARA_CLAUDE.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: comprobaciones-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: prueba
+          POSTGRES_DB: panel_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      # Fijadas por commit (no por etiqueta, que se puede mover); el comentario dice qué versión es.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Tipos
+        run: npm run typecheck
+      - name: Pruebas (con base de datos)
+        run: npm test
+        env:
+          TEST_DATABASE_URL: postgres://postgres:prueba@localhost:5432/panel_test
+      - name: Compilación
+        run: npm run build

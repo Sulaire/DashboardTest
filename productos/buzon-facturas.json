@@ -1,0 +1,48 @@
+{
+  "id": "buzon-facturas",
+  "nombre": "Buzón de facturas",
+  "descripcion": "Las facturas que llegan al correo de cada cliente de la gestoría se archivan solas en su Drive y se envían a la gestoría.",
+  "codigos": "Cliente",
+  "silencio_horas": 48,
+  "cifras": {
+    "facturas": "Facturas archivadas",
+    "problemas": "Facturas con problema",
+    "enviadas": "Facturas enviadas a la gestoría"
+  },
+  "bloques": [
+    {
+      "id": "estado",
+      "tipo": "semaforo",
+      "titulo": "El buzón",
+      "textos": {
+        "verde": "Funcionando: todo lo que llega se archiva.",
+        "ambar": "Funcionando, pero hay facturas que revisar.",
+        "rojo": "Sin noticias del buzón en las últimas 48 horas.",
+        "gris": "Aún no ha llegado ninguna factura."
+      }
+    },
+    {
+      "id": "cifras-mes",
+      "tipo": "cifras",
+      "titulo": "Este mes",
+      "elementos": [
+        { "etiqueta": "Archivadas este mes", "calculo": "suma_mes", "cifra": "facturas" },
+        { "etiqueta": "Con problema", "calculo": "suma_mes", "cifra": "problemas" },
+        { "etiqueta": "Último envío a la gestoría", "calculo": "ultima_fecha", "cifra": "enviadas" },
+        { "etiqueta": "Clientes activos (30 días)", "calculo": "codigos_activos", "dias": 30 }
+      ]
+    },
+    {
+      "id": "clientes",
+      "tipo": "lista",
+      "titulo": "Tus clientes",
+      "cifra": "facturas"
+    },
+    {
+      "id": "avisos",
+      "tipo": "avisos",
+      "titulo": "Avisos",
+      "maximo": 20
+    }
+  ]
+}

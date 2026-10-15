@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Sulaire/Cosmerito/main/hub.schema.json",
+  "leeme": "Ficha de este proyecto para Cosmerito, el HUB desde el que Jordi (Sulaire) gestiona todos sus proyectos. El HUB la lee para montar su tablero; por eso existe, para no copiar el estado a mano. Mantenla al día en el mismo commit que cambie lo que describe (estado, fase, despliegue) y pon 'actualizado' a la fecha. Nada secreto aquí. No cambies el id ni quites el sigilo. Explicación completa: https://github.com/Sulaire/Cosmerito/blob/main/docs/HUB_JSON.md",
+  "version": 1,
+  "id": "dashboard-clientes",
+  "nombre": "Dashboard de clientes",
+  "descripcion": "La ventana de cada cliente: ve solo sus productos (buzón de facturas, webs, chatbots…), con semáforo, cifras y avisos. Cosmerito lo vigila y solo ve resúmenes.",
+  "tipo": "producto",
+  "estado": "activo",
+  "fase": "Fase 1 — Lo mínimo que se puede enseñar",
+  "repo": {
+    "github": "Sulaire/DashboardTest",
+    "rama_de_trabajo": "claude/new-session-f28w15"
+  },
+  "despliegue": {
+    "plataforma": "railway"
+  },
+  "relacionados": [
+    "cosmerito",
+    "facturas-picasso"
+  ],
+  "etiquetas": [
+    "dashboard",
+    "ia",
+    "n8n"
+  ],
+  "progreso": {
+    "archivo": "ROADMAP.md"
+  },
+  "actualizado": "2026-10-15"
+}
