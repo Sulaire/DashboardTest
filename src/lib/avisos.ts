@@ -37,7 +37,7 @@ const NUMERO_LARGO = /\d(?:[^\p{L}\d]{0,2}\d){6,}/u;
 
 /** Lo que huele a dato personal o a dinero. Cada uno con su explicación. */
 const PROHIBIDO: [RegExp, string][] = [
-  [/[^\s@]+@[^\s@]+\.[^\s@]+/, "parece un correo"],
+  [/[^\s@]+@[^\s@]+\.[^\s@]+|[([]\s*at\s*[)\]]|\barroba\b/i, "parece un correo"],
   [NUMERO_LARGO, "tiene un número largo (teléfono, DNI, cuenta…)"],
   [/[€$£¥]|\b(?:eur|euros?|usd|gbp|d[oó]lar(?:es)?|libras?)\b/i, "parece un importe"],
   [/\d[.,]\d{2}(?!\d)/, "parece un importe (un número con céntimos)"],
@@ -49,7 +49,16 @@ const PROHIBIDO: [RegExp, string][] = [
  * en estas formas exactas: 2026-10-03, 03/10/2026 (con barras) y 09:00. Otras
  * («3.10.26») se parecen demasiado a otras cosas y no se quitan.
  */
-const FECHAS = /\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}\/\d{1,2}\/(?:\d{4}|\d{2})\b|\b\d{1,2}:\d{2}(?::\d{2})?\b/g;
+const FECHAS = /\b(\d{4})-(\d{2})-(\d{2})\b|\b(\d{1,2})\/(\d{1,2})\/(?:\d{4}|\d{2})\b|\b(\d{1,2}):([0-5]\d)(?::[0-5]\d)?\b/g;
+
+/** Quita solo las fechas y horas que existen (un «12/34/5678» no es una fecha: puede ser un teléfono partido). */
+function quitarFechas(texto: string): string {
+  return texto.replace(FECHAS, (todo, _a, mesIso, diaIso, dia, mes, hora) => {
+    const [d, m] = mesIso ? [Number(diaIso), Number(mesIso)] : [Number(dia), Number(mes)];
+    if (hora !== undefined) return Number(hora) <= 23 ? " " : todo;
+    return d >= 1 && d <= 31 && m >= 1 && m <= 12 ? " " : todo;
+  });
+}
 
 /**
  * Un código no puede ser un DNI, NIE, CIF o teléfono (aunque sus caracteres
@@ -69,6 +78,9 @@ export function limpiarAviso(
     const c = typeof cuerpo.cliente === "number" ? String(cuerpo.cliente) : cuerpo.cliente;
     if (typeof c !== "string" || !CODIGO.test(c))
       return { error: "'cliente' es un código corto (letras, números, . _ -), nunca un nombre." };
+    // Un código lleva al menos una cifra: así un nombre («BARPICASSO», «ana.garcia») no pasa por código.
+    if (!/\d/.test(c))
+      return { error: "'cliente' tiene que llevar al menos una cifra (p. ej. el número de cliente de la gestoría): un nombre no vale." };
     if (CODIGO_PROHIBIDO.test(c))
       return { error: "'cliente' parece un DNI, NIE, CIF o teléfono: usa el número de cliente de la gestoría, no un dato suyo." };
     codigo = c;
@@ -80,7 +92,7 @@ export function limpiarAviso(
   const texto = normalizar(cuerpo.texto).replace(/\s+/g, " ").trim();
   if (!texto) return { error: "'texto' no puede ir vacío." };
   if (texto.length > TEXTO_MAXIMO) return { error: `'texto' como mucho ${TEXTO_MAXIMO} caracteres.` };
-  const sinFechas = texto.replace(FECHAS, " ");
+  const sinFechas = quitarFechas(texto);
   for (const [patron, motivo] of PROHIBIDO)
     if (patron.test(sinFechas)) return { error: `'texto' ${motivo}: aquí no van datos personales ni importes.` };
 

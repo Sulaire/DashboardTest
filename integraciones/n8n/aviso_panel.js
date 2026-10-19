@@ -33,7 +33,8 @@ var PANEL_TEXTOS = {
 var PANEL_DESCARTES = ['albaran', 'extracto_bancario', 'otro_suministro_no_es_del_negocio',
                        'probable_firma', 'adjunto_no_pdf', 'ia_dice_que_no_es_factura'];
 
-var PANEL_CODIGO = /^[A-Za-z0-9._-]{1,32}$/;
+// Corto, sin espacios y con al menos una cifra (un nombre no vale como código).
+var PANEL_CODIGO = /^(?=.*\d)[A-Za-z0-9._-]{1,32}$/;
 
 // El código del negocio para el panel: la columna codigo_panel de Negocios.
 // NUNCA id_negocio (en la v3 es el nombre: BARPICASSO). Sin código, null: no se manda nada.

@@ -21,6 +21,7 @@ test("el código nunca sale de id_negocio, y sin codigo_panel no hay aviso", () 
   assert.equal(n8n.panelCodigo({ id_negocio: "BARPICASSO" }), null);
   assert.equal(n8n.panelCodigo({ id_negocio: "BARPICASSO", codigo_panel: " 017 " }), "017");
   assert.equal(n8n.panelCodigo({ codigo_panel: "Bar Picasso" }), null);
+  assert.equal(n8n.panelCodigo({ codigo_panel: "BARPICASSO" }), null);
 });
 
 test("pendientes: como el Resumen Semanal, sin descartes ni lo ya resuelto ni otros negocios", () => {

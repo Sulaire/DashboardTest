@@ -45,6 +45,9 @@ test("rechaza datos personales e importes en el texto", () => {
     "Llama al 6\u200B1\u200B2\u200B3\u200B4\u200B5\u200B6\u200B7\u200B8",
     "Escribe a ana＠gmail.com",
     "Cuenta ES12/3456/7890/1234",
+    "Escribe a ana (at) gmail.com",
+    "ana arroba gmail punto com",
+    "Llama al 61/23/4567 o al 12/34/5678",
   ])
     assert.ok("error" in limpiarAviso({ ...base, texto }, buzon), texto);
   assert.ok("error" in limpiarAviso({ ...base, texto: "Total 120,50" }, buzon));
@@ -59,6 +62,7 @@ test("las fechas y horas no se confunden con teléfonos", () => {
     "12 facturas archivadas; 3 por revisar",
     "Semana 41: 120 facturas",
     "12 archivadas y 3 por revisar", // la «y» seguida de un número no es un NIE
+    "Pasada del 2026-12-31 a las 23:59",
   ])
     assert.ok("aviso" in limpiarAviso({ ...base, texto }, buzon), texto);
 });
@@ -67,6 +71,8 @@ test("un código no puede ser un DNI, NIE, CIF ni teléfono", () => {
   for (const cliente of ["12345678Z", "X1234567L", "B12345678", "612345678", "1234567"])
     assert.ok("error" in limpiarAviso({ ...base, cliente }, buzon), cliente);
   for (const cliente of ["017", "C-023", "cliente_7", "BAR01"]) assert.ok("aviso" in limpiarAviso({ ...base, cliente }, buzon), cliente);
+  // Sin ninguna cifra, es un nombre (como el id_negocio de la v3).
+  for (const cliente of ["BARPICASSO", "ana.garcia"]) assert.ok("error" in limpiarAviso({ ...base, cliente }, buzon), cliente);
 });
 
 test("las cifras heredadas de los objetos de JavaScript no cuelan", () => {

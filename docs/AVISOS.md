@@ -26,9 +26,9 @@ En n8n, un nodo **HTTP Request**:
 | Campo | Qué es |
 |---|---|
 | `producto` | El id del producto. Tiene que ser el de la llave. |
-| `cliente` | Opcional. El **código** del cliente de la gestoría (en el buzón, `codigo_panel`: ver abajo). Nunca un nombre. Letras, números, `.`, `_`, `-`; hasta 32. |
+| `cliente` | Opcional. El **código** del cliente de la gestoría (en el buzón, `codigo_panel`: ver abajo). Nunca un nombre. Letras, números, `.`, `_`, `-`; hasta 32, con **al menos una cifra**; no puede tener forma de DNI, NIE, CIF ni teléfono. |
 | `ok` | `true` si fue bien, `false` si hay algo que revisar. |
-| `texto` | Una frase corta (160 caracteres como mucho). Sin correos, teléfonos, DNI ni importes: se rechaza. |
+| `texto` | Una frase corta (160 caracteres como mucho). Se rechaza si lleva un correo, un número de 7 cifras o más (aunque vaya separado), un importe o una moneda. Las fechas, solo como `2026-10-03` o `03/10/2026`, y las horas como `09:00`. Un nombre de persona no se puede detectar: no lo pongas. |
 | `cifras` | Opcional. Recuentos (enteros ≥ 0) de las cifras que declara el producto. |
 
 Respuestas: `200 {"ok":true}`; `400` con el motivo en `error` si algo del
