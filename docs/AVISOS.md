@@ -77,9 +77,11 @@ posterior: si la siguiente pasada archiva bien, es que ya funciona.
 El código exacto para los nodos de n8n, con pruebas, está en
 `integraciones/n8n/aviso_panel.js`, y los pasos en `docs/N8N_BUZON.md`.
 
-Aunque una pasada no archive nada, conviene mandar el aviso de la Ingesta
-con `facturas: 0`: así el panel sabe que el buzón sigue vivo (si pasa
-`silencio_horas` sin noticias, el semáforo se pone rojo).
+No hace falta mandar el aviso de la Ingesta cada hora: basta cuando archiva
+algo, cuando cambian las pendientes y, aunque no pase nada, uno cada 12 horas
+con `facturas: 0` para que el panel sepa que el buzón sigue vivo (si pasa
+`silencio_horas` sin noticias, el semáforo se pone rojo). El código de
+`integraciones/n8n/aviso_panel.js` ya lo hace (`panelDebeMandarPasada`).
 
 ### Motivos que esperan a alguien (cuentan en `pendientes`)
 

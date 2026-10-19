@@ -60,7 +60,10 @@ export async function cambiarActiva(datos: FormData) {
 
 export async function elegirBloques(datos: FormData) {
   await exigirAdmin();
-  await admin.elegirBloques(texto(datos, "contratacion"), datos.getAll("bloque").map(String));
+  const elegidos = datos.getAll("bloque").map(String);
+  // Sin ningún bloque, el cliente vería su pestaña vacía: no se guarda.
+  if (elegidos.length === 0) redirect("/admin?error=bloques");
+  await admin.elegirBloques(texto(datos, "contratacion"), elegidos);
   revalidatePath("/admin");
 }
 

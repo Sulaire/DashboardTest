@@ -129,10 +129,36 @@ Cosmerito: `docs/COSMERITO.md`) su propia llave.
 ## Frenos
 
 `/api/avisos` no lee cuerpos de más de 8 KB y acepta como mucho 120 avisos
-por minuto de cada producto contratado (y 1.200 en total). Si una llave se
-filtra o un flujo de n8n entra en bucle, el panel responde 429 en vez de
-llenarse la base de datos. La cuenta vive en memoria (`src/lib/limite.ts`):
-al reiniciar se pone a cero.
+por minuto de cada producto contratado. Las llaves que no valen cuentan
+aparte, por IP (30 por minuto): así nadie puede gastar el cupo de las buenas
+mandando basura. Si una llave se filtra o un flujo de n8n entra en bucle, el
+panel responde 429 en vez de llenarse la base de datos. Las rutas de entrar
+(`/api/auth/…`) no leen cuerpos de más de 16 KB, y a un mismo correo se le
+mandan como mucho 3 enlaces cada 15 minutos. Las cuentas viven en memoria
+(`src/lib/limite.ts`): al reiniciar se ponen a cero.
+
+## Lo que se lee para pintar una pestaña
+
+Los avisos de los últimos 63 días (para «este mes», el envío mensual y las 8
+semanas de la gráfica), como mucho 50.000; si hubiera más, la pantalla avisa
+de que alguna cifra puede quedarse corta. Aparte, la última fecha de cada
+código sin límite de días (`historialDe`): un producto callado hace meses
+sale en rojo, no en gris, y un código que lleva mucho sin hablar sigue en la
+lista como «Sin movimiento».
+
+## Hasta dónde llega «aunque el código falle»
+
+- Las reglas por filas protegen de una consulta que se olvide de filtrar por
+  cliente. **No** protegen de una inyección de SQL: con ella se podría decir
+  a Postgres «ahora soy el cliente X». Por eso todas las consultas llevan sus
+  valores como parámetros (`$1`), nunca pegados al texto.
+- Las tablas de las cuentas (`user`, `session`…) no tienen reglas por filas:
+  las necesita Better Auth antes de saber quién eres. La sesión guarda la IP y
+  el navegador de quien entra.
+- La conexión del dueño es la que da Railway, que es superusuario. Un fallo
+  en el código de administración sería grave; por eso solo la usan tres
+  archivos y una prueba de guardia lo vigila. Mejora posible: un dueño que no
+  sea superusuario.
 
 ## Dar de baja a un cliente
 

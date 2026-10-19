@@ -17,7 +17,7 @@
       "titulo": "El buzón",
       "textos": {
         "verde": "Funcionando: todo lo que llega se archiva.",
-        "ambar": "Funcionando, pero hay facturas que revisar.",
+        "ambar": "Funcionando, pero hay algo que revisar: mira «Por revisar» y los avisos.",
         "rojo": "Sin noticias del buzón en las últimas 48 horas.",
         "gris": "Aún no ha llegado ninguna factura."
       }

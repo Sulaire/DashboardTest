@@ -25,6 +25,7 @@ test("una descripción con errores se explica", () => {
       { id: "c", tipo: "grafica", titulo: "t" },
       { id: "g", tipo: "grafica", titulo: "t", cifra: "a", semanas: 20 },
       { id: "z", tipo: "barras", titulo: "t" },
+      { id: "d", tipo: "cifras", titulo: "t", elementos: [{ etiqueta: "e", calculo: "codigos_activos", dias: 90 }] },
     ],
   });
   assert.ok("errores" in r);
@@ -33,6 +34,7 @@ test("una descripción con errores se explica", () => {
   assert.match(r.errores.join(" "), /'abiertos'/);
   assert.match(r.errores.join(" "), /'semanas' entre 2 y 8/);
   assert.match(r.errores.join(" "), /tipo desconocido/);
+  assert.match(r.errores.join(" "), /'dias' entre 1 y 63/);
 });
 
 test("un archivo roto no tumba el resto", () => {

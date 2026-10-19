@@ -1,4 +1,4 @@
-import { DIAS_QUE_SE_LEEN, type Aviso } from "@/lib/calculos";
+import { DIAS_QUE_SE_LEEN, type Aviso, type Historial } from "@/lib/calculos";
 import { comoCliente, consultaApp } from "@/lib/db";
 import type { AvisoNuevo } from "@/lib/avisos";
 import { huellaDe } from "@/lib/llaves";
@@ -35,18 +35,42 @@ export async function pestanas(clienteId: string): Promise<Pestana[]> {
   );
 }
 
-/** Los avisos recientes de una pestaña. */
-export async function avisosDe(clienteId: string, contratacionId: string): Promise<Aviso[]> {
-  return comoCliente(clienteId, async (c) =>
+/**
+ * Cuántos avisos se leen como mucho para pintar una pestaña. Con la ingesta
+ * mandando poco (docs/N8N_BUZON.md: solo cuando cambia algo y uno al día)
+ * sobra para cientos de negocios. Si se llega, la pantalla lo dice
+ * (`incompleto`) en vez de enseñar cifras mal sin avisar.
+ */
+export const AVISOS_MAXIMOS = 50_000;
+
+/** Los avisos recientes de una pestaña (los más nuevos primero). */
+export async function avisosDe(clienteId: string, contratacionId: string): Promise<{ avisos: Aviso[]; incompleto: boolean }> {
+  const filas = await comoCliente(clienteId, async (c) =>
     (
       await c.query<Aviso>(
         `select codigo, ok, texto, cifras, recibido_en from avisos
          where contratacion_id = $1 and recibido_en > now() - make_interval(days => $2)
-         order by recibido_en desc limit 20000`,
-        [contratacionId, DIAS_QUE_SE_LEEN],
+         order by recibido_en desc limit $3`,
+        [contratacionId, DIAS_QUE_SE_LEEN, AVISOS_MAXIMOS + 1],
       )
     ).rows,
   );
+  return { avisos: filas.slice(0, AVISOS_MAXIMOS), incompleto: filas.length > AVISOS_MAXIMOS };
+}
+
+/** Cuándo habló por última vez cada código (y el producto entero), sin límite de días. */
+export async function historialDe(clienteId: string, contratacionId: string): Promise<Historial> {
+  const filas = await comoCliente(clienteId, async (c) =>
+    (
+      await c.query<{ codigo: string | null; ultimo: Date }>(
+        "select codigo, max(recibido_en) as ultimo from avisos where contratacion_id = $1 group by codigo",
+        [contratacionId],
+      )
+    ).rows,
+  );
+  const codigos = new Map(filas.map((f) => [f.codigo ?? "", f.ultimo] as const));
+  const ultimo = filas.reduce<Date | null>((m, f) => (!m || f.ultimo > m ? f.ultimo : m), null);
+  return { ultimo, codigos };
 }
 
 export type Destino = { contratacionId: string; clienteId: string; producto: string };

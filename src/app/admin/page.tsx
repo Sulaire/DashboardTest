@@ -45,6 +45,11 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
     <>
       <Cabecera cliente="Administración" />
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+        {error === "bloques" && (
+          <p role="alert" className="rounded-xl bg-rojo-fondo p-4 text-rojo">
+            No se ha guardado: elige al menos un bloque (si no, el cliente vería su pestaña vacía).
+          </p>
+        )}
         {error === "confirmacion" && (
           <p role="alert" className="rounded-xl bg-rojo-fondo p-4 text-rojo">
             No se ha borrado nada: el nombre escrito no coincide con el del cliente.

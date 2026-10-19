@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import pg from "pg";
 import * as admin from "@/lib/admin";
-import { avisosDe, clientesDeUsuario, destinoDeLlave, guardarAviso, nombreCliente, pestanas } from "@/lib/datos";
+import { avisosDe, clientesDeUsuario, destinoDeLlave, guardarAviso, historialDe, nombreCliente, pestanas } from "@/lib/datos";
 import { cerrarDb, comoCliente, consultaApp, poolApp, poolDueno } from "@/lib/db";
 import { producto } from "@/lib/productos/cargar";
 import { borrarAvisosViejos } from "@/lib/retencion";
@@ -61,8 +61,12 @@ test("la llave decide el cliente, y cada aviso va al suyo", sin, async () => {
   assert.equal(await destinoDeLlave("dcp_inventada"), null);
   await guardarAviso(dA!, { codigo: "017", ok: true, texto: "3 facturas archivadas", cifras: { facturas: 3 } });
   await guardarAviso(dB!, { codigo: "099", ok: false, texto: "PDF ilegible", cifras: { pendientes: 1 } });
-  const deA = await avisosDe(A, contratacionA);
+  const { avisos: deA, incompleto } = await avisosDe(A, contratacionA);
   assert.deepEqual(deA.map((a) => a.codigo), ["017"]);
+  assert.equal(incompleto, false);
+  const h = await historialDe(A, contratacionA);
+  assert.deepEqual([...h.codigos.keys()], ["017"]);
+  assert.ok(h.ultimo);
 });
 
 test("seguridad por filas: sin filtrar, cada cliente solo ve lo suyo", sin, async () => {
@@ -105,6 +109,12 @@ test("SET LOCAL: al acabar la transacción, la conexión olvida el cliente", sin
   }
 });
 
+test("dos «nueva llave» a la vez dejan una sola viva", sin, async () => {
+  await Promise.all([admin.nuevaLlaveProducto(contratacionA), admin.nuevaLlaveProducto(contratacionA), admin.nuevaLlaveProducto(contratacionA)]);
+  const vivas = (await (await poolDueno()).query("select 1 from llaves_producto where contratacion_id = $1 and revocada_en is null", [contratacionA])).rows;
+  assert.equal(vivas.length, 1);
+});
+
 test("una llave anulada deja de valer y la nueva anula la vieja", sin, async () => {
   const otra = await admin.nuevaLlaveProducto(contratacionA);
   assert.equal(await destinoDeLlave(llaveA), null);
@@ -126,7 +136,8 @@ test("personas: dar y quitar acceso", sin, async () => {
   await assert.rejects(admin.anadirPersona(A, "no-es-un-correo"));
 });
 
-test("a la carta: se guardan solo bloques que existen; todos = null", sin, async () => {
+test("a la carta: se guardan solo bloques que existen; todos = null; ninguno no vale", sin, async () => {
+  await assert.rejects(admin.elegirBloques(contratacionA, ["inventado"]), /al menos un bloque/);
   await admin.elegirBloques(contratacionA, ["avisos", "inventado"]);
   assert.deepEqual((await pestanas(A))[0].bloques, ["avisos"]);
   await admin.elegirBloques(contratacionA, producto("buzon-facturas")!.bloques.map((b) => b.id));

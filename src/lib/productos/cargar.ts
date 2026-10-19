@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { SEMANAS_MAXIMAS } from "@/lib/calculos";
+import { DIAS_QUE_SE_LEEN, SEMANAS_MAXIMAS } from "@/lib/calculos";
 import { TIPOS_BLOQUE, type Bloque, type Producto } from "@/lib/productos/tipos";
 
 /**
@@ -29,7 +29,7 @@ export function validarProducto(dato: unknown): { producto: Producto } | { error
     if (!CIFRA.test(clave)) e.push(`La cifra '${clave}' tiene que ir en minúsculas (letras, números y _).`);
     if (!esTexto(nombre)) e.push(`La cifra '${clave}' necesita un nombre.`);
   }
-  const conocida = (c: unknown) => typeof c === "string" && !!cifras && c in cifras;
+  const conocida = (c: unknown) => typeof c === "string" && !!cifras && Object.hasOwn(cifras, c);
   if (p.abiertos !== undefined && !conocida(p.abiertos)) e.push(`'abiertos' tiene que ser una de las 'cifras'.`);
   if (!Array.isArray(p.bloques) || p.bloques.length === 0) e.push("Faltan 'bloques'.");
   else {
@@ -53,7 +53,8 @@ export function validarProducto(dato: unknown): { producto: Producto } | { error
           if (el.calculo === "suma_mes" || el.calculo === "ultima_fecha" || el.calculo === "actual") {
             if (!conocida(el.cifra)) e.push(`${quien}: la cifra '${el.cifra}' no está en 'cifras'.`);
           } else if (el.calculo === "codigos_activos") {
-            if (!(typeof el.dias === "number" && el.dias > 0)) e.push(`${quien}: 'dias' tiene que ser mayor que 0.`);
+            if (!(Number.isInteger(el.dias) && el.dias > 0 && el.dias <= DIAS_QUE_SE_LEEN))
+              e.push(`${quien}: 'dias' entre 1 y ${DIAS_QUE_SE_LEEN} (los días que se leen).`);
           } else e.push(`${quien}: cálculo desconocido (suma_mes, ultima_fecha, actual, codigos_activos).`);
         }
       }

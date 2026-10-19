@@ -76,6 +76,22 @@ function panelAvisoPasada(codigo, archivadas, pendientes) {
            cifras: { facturas: a, pendientes: p } };
 }
 
+// Si toca mandar el aviso de la pasada: cuando archivó algo, cuando cambian las
+// pendientes, o si hace más de 12 horas del último (para que el panel sepa que
+// el buzón sigue vivo; se pone rojo a las 48 h sin noticias). Así llegan unos
+// pocos avisos al día por negocio en vez de 24, y el panel cuenta deprisa.
+// `estado` es $getWorkflowStaticData('global'), que n8n guarda entre
+// ejecuciones de producción (no en las de prueba a mano: ahí siempre manda).
+var PANEL_LATIDO_MS = 12 * 3600 * 1000;
+function panelDebeMandarPasada(estado, codigo, archivadas, pendientes, ahoraMs) {
+  var clave = 'panel:' + codigo;
+  var antes = (estado && estado[clave]) || null;
+  var toca = !antes || Number(archivadas) > 0 || antes.pendientes !== Number(pendientes) ||
+             ahoraMs - antes.cuando >= PANEL_LATIDO_MS;
+  if (toca && estado) estado[clave] = { pendientes: Number(pendientes), cuando: ahoraMs };
+  return toca;
+}
+
 // Un aviso por cada fila NUEVA de Revision que espera a alguien (los descartes no).
 function panelAvisosRevision(codigo, filasNuevas) {
   var out = [];
@@ -108,5 +124,5 @@ function panelAvisoGeneral(ok, que) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { panelCodigo: panelCodigo, panelEsDescarte: panelEsDescarte, panelTexto: panelTexto,
     panelPendientes: panelPendientes, panelAvisoPasada: panelAvisoPasada, panelAvisosRevision: panelAvisosRevision,
-    panelAvisoEnvio: panelAvisoEnvio, panelAvisoGeneral: panelAvisoGeneral, PANEL_TEXTOS: PANEL_TEXTOS };
+    panelAvisoEnvio: panelAvisoEnvio, panelAvisoGeneral: panelAvisoGeneral, panelDebeMandarPasada: panelDebeMandarPasada, PANEL_TEXTOS: PANEL_TEXTOS };
 }

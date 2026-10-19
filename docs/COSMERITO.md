@@ -57,6 +57,10 @@ curl -s -H "Authorization: Bearer $PANEL_COSMERITO_TOKEN" "$PANEL_URL/api/cosmer
   cuáles.
 - `cifras`: las del bloque de cifras del producto, con el número (o la fecha)
   y el texto tal como lo ve el cliente.
+- `incompleto`: `true` si había tantos avisos que no se leyeron todos (alguna
+  cifra puede quedarse corta).
+- `ultimo_aviso` sale aunque haga meses: un producto callado mucho tiempo es
+  `rojo`, nunca `gris`.
 - Lo que **no** sale nunca: los códigos de los clientes de tu cliente, los
   textos de los avisos, los correos de las personas. Lo vigila
   `src/lib/resumen.test.ts` (con un aviso «canario» que no puede aparecer) y

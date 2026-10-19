@@ -42,6 +42,20 @@ test("un problema sin código lo cierra cualquier aviso bueno posterior", () => 
   assert.equal(semaforo([error, aviso("1", false, 1)], 48, ahora), "ambar");
 });
 
+test("historial: callado hace meses es rojo, no gris; y los códigos viejos siguen en la lista", () => {
+  const historial = { ultimo: new Date("2026-06-01T10:00:00Z"), codigos: new Map([["9", new Date("2026-06-01T10:00:00Z")]]) };
+  assert.equal(semaforo([], 48, ahora, undefined, historial), "rojo");
+  assert.equal(semaforo([], 48, ahora, undefined, { ultimo: null, codigos: new Map() }), "gris");
+  const r = filas([aviso("1", true, 1, { facturas: 2 })], "facturas", ahora, undefined, historial);
+  assert.deepEqual(
+    r.map((f) => [f.codigo, f.estado]),
+    [
+      ["1", "bien"],
+      ["9", "quieto"],
+    ],
+  );
+});
+
 test("cifras «actual»: el último valor de cada código, sumado", () => {
   const avisos = [aviso("1", true, 5, { pendientes: 4 }), aviso("1", true, 1, { pendientes: 1 }), aviso("2", true, 2, { pendientes: 2 }), aviso("3", true, 1)];
   assert.equal(valorDe({ etiqueta: "", calculo: "actual", cifra: "pendientes" }, avisos, ahora), "3");

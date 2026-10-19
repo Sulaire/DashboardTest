@@ -9,6 +9,7 @@ import {
   valorDe,
   type Aviso,
   type Fila,
+  type Historial,
 } from "@/lib/calculos";
 import type { Bloque, Color, Producto } from "@/lib/productos/tipos";
 
@@ -44,8 +45,8 @@ function Punto({ color }: { color: Color }) {
   return <span aria-hidden className={`inline-block size-3 shrink-0 rounded-full ${ESTILO[color].punto}`} />;
 }
 
-function Semaforo({ bloque, producto, avisos, ahora }: Props & { bloque: Extract<Bloque, { tipo: "semaforo" }> }) {
-  const color = semaforo(avisos, producto.silencio_horas, ahora, producto.abiertos);
+function Semaforo({ bloque, producto, avisos, ahora, historial }: Props & { bloque: Extract<Bloque, { tipo: "semaforo" }> }) {
+  const color = semaforo(avisos, producto.silencio_horas, ahora, producto.abiertos, historial);
   const e = ESTILO[color];
   return (
     <section className={`flex items-center gap-4 rounded-xl border border-borde p-5 ${e.fondo}`}>
@@ -155,8 +156,8 @@ function Grafica({ bloque, avisos, ahora }: Props & { bloque: Extract<Bloque, { 
   );
 }
 
-function Lista({ bloque, producto, avisos, ahora }: Props & { bloque: Extract<Bloque, { tipo: "lista" }> }) {
-  const renglones = filas(avisos, bloque.cifra, ahora, producto.abiertos);
+function Lista({ bloque, producto, avisos, ahora, historial }: Props & { bloque: Extract<Bloque, { tipo: "lista" }> }) {
+  const renglones = filas(avisos, bloque.cifra, ahora, producto.abiertos, historial);
   if (renglones.length === 0)
     return (
       <Caja titulo={bloque.titulo}>
@@ -223,13 +224,13 @@ function Avisos({ bloque, producto, avisos }: Props & { bloque: Extract<Bloque, 
   );
 }
 
-type Props = { producto: Producto; avisos: Aviso[]; ahora: Date };
+type Props = { producto: Producto; avisos: Aviso[]; ahora: Date; historial?: Historial };
 
-export function Pestana({ producto, bloques, avisos, ahora }: Props & { bloques: Bloque[] }) {
+export function Pestana({ producto, bloques, avisos, ahora, historial }: Props & { bloques: Bloque[] }) {
   return (
     <div className="space-y-5">
       {bloques.map((b) => {
-        const p = { producto, avisos, ahora };
+        const p = { producto, avisos, ahora, historial };
         switch (b.tipo) {
           case "semaforo":
             return <Semaforo key={b.id} bloque={b} {...p} />;

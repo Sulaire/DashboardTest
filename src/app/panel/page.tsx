@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Pestana } from "@/componentes/Bloques";
 import { Cabecera, Pestanas } from "@/componentes/Cabecera";
 import { faltan } from "@/lib/config";
-import { avisosDe, nombreCliente, pestanas } from "@/lib/datos";
+import { avisosDe, historialDe, nombreCliente, pestanas } from "@/lib/datos";
 import { bloquesElegidos, producto } from "@/lib/productos/cargar";
 import { quienSoy } from "@/lib/sesion";
 
@@ -45,7 +45,9 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
     return p ? [{ ...t, p }] : [];
   });
   const actual = conocidas.find((t) => t.producto === q.p) ?? conocidas[0];
-  const avisos = actual ? await avisosDe(clienteId, actual.contratacionId) : [];
+  const [{ avisos, incompleto }, historial] = actual
+    ? await Promise.all([avisosDe(clienteId, actual.contratacionId), historialDe(clienteId, actual.contratacionId)])
+    : [{ avisos: [], incompleto: false }, undefined];
   const ahora = new Date();
   const base = yo.esAdmin && q.cliente ? `/panel?cliente=${clienteId}` : "/panel";
 
@@ -65,7 +67,18 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
             <Pestanas lista={conocidas.map((t) => ({ id: t.p.id, nombre: t.p.nombre }))} actual={actual.p.id} base={base} />
             <h1 className="mb-1 text-2xl font-semibold">{actual.p.nombre}</h1>
             <p className="mb-5 text-texto-suave">{actual.p.descripcion}</p>
-            <Pestana producto={actual.p} bloques={bloquesElegidos(actual.p, actual.bloques)} avisos={avisos} ahora={ahora} />
+            {incompleto && (
+              <p role="status" className="mb-5 rounded-lg border border-borde bg-ambar-fondo px-4 py-3 text-sm">
+                Hay tantos avisos que solo se cuentan los más recientes: alguna cifra puede quedarse corta.
+              </p>
+            )}
+            <Pestana
+              producto={actual.p}
+              bloques={bloquesElegidos(actual.p, actual.bloques)}
+              avisos={avisos}
+              ahora={ahora}
+              historial={historial}
+            />
           </>
         )}
       </main>

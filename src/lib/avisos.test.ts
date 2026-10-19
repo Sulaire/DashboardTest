@@ -33,6 +33,18 @@ test("rechaza datos personales e importes en el texto", () => {
     "NIF 12345678Z",
     "Total 120,50 €",
     "Total 120 euros",
+    // Los que encontró la auditoría del 19-10-2026:
+    "Llama al 612.34.56.78",
+    "DNI 12.345.678-Z",
+    "DNI 12345678 Z",
+    "NIE X-1234567-L",
+    "Importe 79.03",
+    "EUR 79",
+    "79 USD",
+    "Llama al ６１２３４５６７８",
+    "Llama al 6\u200B1\u200B2\u200B3\u200B4\u200B5\u200B6\u200B7\u200B8",
+    "Escribe a ana＠gmail.com",
+    "Cuenta ES12/3456/7890/1234",
   ])
     assert.ok("error" in limpiarAviso({ ...base, texto }, buzon), texto);
   assert.ok("error" in limpiarAviso({ ...base, texto: "Total 120,50" }, buzon));
@@ -41,8 +53,30 @@ test("rechaza datos personales e importes en el texto", () => {
 });
 
 test("las fechas y horas no se confunden con teléfonos", () => {
-  for (const texto of ["Envío del 2026-10-03 09:00 hecho", "Pasada del 03/10/2026 a las 09:00:15", "Última factura el 3.10.26"])
+  for (const texto of [
+    "Envío del 2026-10-03 09:00 hecho",
+    "Pasada del 03/10/2026 a las 09:00:15",
+    "12 facturas archivadas; 3 por revisar",
+    "Semana 41: 120 facturas",
+    "12 archivadas y 3 por revisar", // la «y» seguida de un número no es un NIE
+  ])
     assert.ok("aviso" in limpiarAviso({ ...base, texto }, buzon), texto);
+});
+
+test("un código no puede ser un DNI, NIE, CIF ni teléfono", () => {
+  for (const cliente of ["12345678Z", "X1234567L", "B12345678", "612345678", "1234567"])
+    assert.ok("error" in limpiarAviso({ ...base, cliente }, buzon), cliente);
+  for (const cliente of ["017", "C-023", "cliente_7", "BAR01"]) assert.ok("aviso" in limpiarAviso({ ...base, cliente }, buzon), cliente);
+});
+
+test("las cifras heredadas de los objetos de JavaScript no cuelan", () => {
+  assert.ok("error" in limpiarAviso({ ...base, cifras: JSON.parse('{"constructor": 7903}') }, buzon));
+  assert.ok("error" in limpiarAviso({ ...base, cifras: JSON.parse('{"toString": 1}') }, buzon));
+});
+
+test("el texto se guarda normalizado y sin invisibles", () => {
+  const r = limpiarAviso({ ...base, texto: "１２ facturas\u200B archivadas" }, buzon);
+  assert.ok("aviso" in r && r.aviso.texto === "12 facturas archivadas");
 });
 
 test("las cifras son recuentos declarados por el producto", () => {

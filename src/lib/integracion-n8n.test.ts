@@ -57,3 +57,16 @@ test("el aviso de la pasada trae lo que el panel necesita para el ámbar", () =>
     cifras: { facturas: 3, pendientes: 1 },
   });
 });
+
+test("la pasada se manda si archivó algo, si cambian las pendientes o cada 12 horas", () => {
+  const estado: Record<string, unknown> = {};
+  const h = 3_600_000;
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 0, 0), true); // la primera vez
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 0, 1 * h), false); // nada nuevo
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 2, 0, 2 * h), true); // archivó
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 1, 3 * h), true); // cambian las pendientes
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 1, 4 * h), false);
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 1, 15 * h), true); // latido
+  assert.equal(n8n.panelDebeMandarPasada(estado, "023", 0, 0, 15 * h), true); // cada negocio, lo suyo
+  assert.equal(n8n.panelDebeMandarPasada(null, "017", 0, 0, 15 * h), true); // sin estado, siempre
+});

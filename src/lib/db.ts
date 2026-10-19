@@ -1,3 +1,4 @@
+import { createHash, createHmac, pbkdf2Sync, randomBytes } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import pg from "pg";
@@ -138,16 +139,34 @@ export async function migrar(pool: pg.Pool, carpeta = join(process.cwd(), "migra
 }
 
 /**
+ * La contraseña de panel_app como la guarda Postgres (SCRAM-SHA-256), hecha
+ * aquí: así a Postgres le llega ya cifrada y no puede quedar escrita tal cual
+ * en su registro de órdenes (auditoría del 19-10-2026). Es el mismo cálculo
+ * que hace Postgres (RFC 7677); solo se usan contraseñas de caracteres ASCII
+ * visibles, para que no haga falta el paso de normalización (SASLprep).
+ */
+export function verificadorScram(contrasena: string, sal = randomBytes(16), iteraciones = 4096): string {
+  const salada = pbkdf2Sync(contrasena, sal, iteraciones, 32, "sha256");
+  const claveCliente = createHmac("sha256", salada).update("Client Key").digest();
+  const guardada = createHash("sha256").update(claveCliente).digest();
+  const servidor = createHmac("sha256", salada).update("Server Key").digest();
+  return `SCRAM-SHA-256$${iteraciones}:${sal.toString("base64")}$${guardada.toString("base64")}:${servidor.toString("base64")}`;
+}
+
+export const CONTRASENA_VALIDA = /^[\x21-\x7e]{24,}$/;
+
+/**
  * Deja a panel_app listo para entrar con PANEL_DB_PASSWORD, y nada más:
  * sin poder saltarse las reglas por filas, sin superpoderes.
  */
 export async function prepararRolApp(pool: pg.Pool, contrasena: string): Promise<void> {
-  if (contrasena.length < 24) throw new Error("PANEL_DB_PASSWORD tiene que tener al menos 24 caracteres.");
+  if (!CONTRASENA_VALIDA.test(contrasena))
+    throw new Error("PANEL_DB_PASSWORD tiene que tener al menos 24 caracteres, sin espacios ni letras con tilde.");
   const cliente = await pool.connect();
   try {
-    // ALTER ROLE no acepta parámetros ($1): la contraseña va escapada por pg.
+    // ALTER ROLE no acepta parámetros ($1): el verificador va escapado por pg.
     await cliente.query(
-      `alter role ${ROL_APP} with login nosuperuser nobypassrls password ${cliente.escapeLiteral(contrasena)}`,
+      `alter role ${ROL_APP} with login nosuperuser nobypassrls password ${cliente.escapeLiteral(verificadorScram(contrasena))}`,
     );
   } finally {
     cliente.release();

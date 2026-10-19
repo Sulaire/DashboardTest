@@ -13,6 +13,7 @@ Nombre provisional (se cambia en `src/lib/marca.ts`).
 - Protección de datos y lo que va en el contrato de encargo: `docs/PROTECCION_DE_DATOS.md`.
 - Cómo se publica en Railway: `docs/DESPLIEGUE.md`.
 - Cómo lo vigila Cosmerito (salud y resumen por cliente): `docs/COSMERITO.md`.
+- Revisiones y fallos encontrados (si revisas o arreglas uno, apúntalo): `docs/REVISIONES.md`.
 
 Jordi está aprendiendo a programar. Explícale las cosas en español, sin jerga
 innecesaria, y deja por escrito el porqué de cada decisión.
@@ -46,9 +47,10 @@ npm run dev                  # http://localhost:3000 — sin Resend, el enlace p
 
 - **Cada cliente solo ve lo suyo, aunque el código falle.** Las tablas con datos de un cliente llevan seguridad por filas de Postgres. La app usa el usuario `panel_app` (no es dueño de nada, no puede saltarse reglas) y entra en nombre de un cliente solo con `comoCliente` (`src/lib/db.ts`), que lo dice con `SET LOCAL` (`set_config(…, true)`), nunca con `SET`: las conexiones se reutilizan. Toda tabla nueva con `cliente_id` lleva su regla en la misma migración.
 - La conexión del dueño (`poolDueno`) se salta las reglas: solo la usan `src/lib/admin.ts`, `src/lib/retencion.ts` y `src/lib/resumen-datos.ts` (solo para listar clientes; sus avisos los lee con `comoCliente`). `lib/admin` solo se importa desde `src/app/admin/`, y cada acción de `src/app/admin/acciones.ts` empieza con `exigirAdmin()`: las Server Actions son rutas públicas por debajo.
-- Entrar: Better Auth con enlace mágico, sin registro abierto (`disableSignUp`); el enlace solo se manda a correos con cuenta; el formulario responde lo mismo exista o no. La IP sale de `X-Real-IP`. Nada de inicios de sesión hechos a mano.
-- `/api/avisos`: la llave del producto decide el cliente (nunca el cuerpo). De las llaves solo se guarda su huella. El texto rechaza correos, teléfonos, DNI/NIE e importes; las cifras solo pueden ser recuentos declarados por el producto (`src/lib/avisos.ts`). Nunca importes ni datos personales, ni el contenido de una factura.
-- `/api/avisos` tiene freno: cuerpo de 8 KB como mucho, 120 avisos por minuto por producto y 1.200 en total (`src/lib/limite.ts`).
+- Entrar: Better Auth con enlace mágico, sin registro abierto (`disableSignUp`); el enlace solo se manda a correos con cuenta, **después** de responder (`after`), para que la respuesta sea igual (y tarde igual) exista o no; 3 enlaces por correo cada 15 minutos; cuerpos de 16 KB como mucho; sin `PANEL_URL` no arranca. La IP sale de `X-Real-IP`. Nada de inicios de sesión hechos a mano.
+- `/api/avisos`: la llave del producto decide el cliente (nunca el cuerpo). De las llaves solo se guarda su huella, y hay una sola viva por producto. El texto se normaliza y rechaza correos, números de 7 cifras o más, importes y monedas; el código no puede tener forma de DNI/NIE/CIF/teléfono; las cifras solo pueden ser recuentos declarados por el producto (`Object.hasOwn`, `src/lib/avisos.ts`). Nunca importes ni datos personales, ni el contenido de una factura.
+- `/api/avisos` tiene freno: cuerpo de 8 KB como mucho, 120 avisos por minuto por producto, y las llaves que no valen cuentan aparte por IP (nunca gastan el cupo de las buenas) (`src/lib/limite.ts`).
+- La contraseña de `panel_app` se le da a Postgres ya cifrada (SCRAM, `verificadorScram`), nunca tal cual.
 - `/api/cosmerito/v1/resumen` solo abre con `PANEL_COSMERITO_TOKEN` (ni sesión ni llave de producto) y solo da lo que prepara `src/lib/resumen.ts`: semáforo y cifras, nunca códigos ni textos de avisos ni correos.
 - Los clientes de la gestoría son **códigos**, no nombres. Las facturas no se guardan aquí.
 - Los avisos se borran a los 12 meses (`src/lib/retencion.ts`): está en el contrato de encargo, no lo alargues sin hablarlo con Jordi.

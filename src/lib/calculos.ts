@@ -14,6 +14,14 @@ export type Aviso = {
   recibido_en: Date;
 };
 
+/**
+ * Lo que se sabe de un producto más allá de los días que se leen: cuándo habló
+ * por última vez, en total y cada código. Sirve para que un producto callado
+ * hace meses salga en rojo (no en gris, «nunca llegó nada») y para que un
+ * código que lleva mucho sin dar noticias siga en la lista como «Sin movimiento».
+ */
+export type Historial = { ultimo: Date | null; codigos: Map<string, Date> };
+
 /** Las semanas que puede enseñar como mucho una gráfica: tienen que caber en lo que se lee. */
 export const SEMANAS_MAXIMAS = 8;
 
@@ -94,8 +102,8 @@ function generalAbierto(avisos: Aviso[]): boolean {
  *   apaga cuando llega a 0); o un problema sin código que nada ha cerrado aún;
  * - verde: lo demás.
  */
-export function semaforo(avisos: Aviso[], silencioHoras: number, ahora: Date, abiertos?: string): Color {
-  if (avisos.length === 0) return "gris";
+export function semaforo(avisos: Aviso[], silencioHoras: number, ahora: Date, abiertos?: string, historial?: Historial): Color {
+  if (avisos.length === 0) return historial?.ultimo ? "rojo" : "gris";
   const ultimo = ordenados(avisos)[0];
   if (ahora.getTime() - ultimo.recibido_en.getTime() > silencioHoras * 3_600_000) return "rojo";
   if (generalAbierto(avisos)) return "ambar";
@@ -147,14 +155,14 @@ export type Fila = {
 const ORDEN_FILA = { revisar: 0, bien: 1, quieto: 2 };
 
 /** Un renglón por código: los que tienen un problema abierto, primero; los quietos, al final. */
-export function filas(avisos: Aviso[], cifra: string | undefined, ahora: Date, abiertos?: string): Fila[] {
+export function filas(avisos: Aviso[], cifra: string | undefined, ahora: Date, abiertos?: string, historial?: Historial): Fila[] {
   const mes = mesDe(ahora);
   const pendientes = abiertos ? ultimoValor(avisos, abiertos) : new Map<string, number>();
   const sumas = new Map<string, number>();
   if (cifra)
     for (const a of avisos)
       if (a.codigo && mesDe(a.recibido_en) === mes) sumas.set(a.codigo, (sumas.get(a.codigo) ?? 0) + (a.cifras[cifra] ?? 0));
-  return [...ultimoPorCodigo(avisos).entries()]
+  const lista: Fila[] = [...ultimoPorCodigo(avisos).entries()]
     .filter(([codigo]) => codigo !== "")
     .map(([codigo, a]): Fila => ({
       codigo,
@@ -166,8 +174,12 @@ export function filas(avisos: Aviso[], cifra: string | undefined, ahora: Date, a
       ultimo: a.recibido_en,
       delMes: cifra ? (sumas.get(codigo) ?? 0) : null,
       pendientes: pendientes.get(codigo) ?? null,
-    }))
-    .sort((x, y) => ORDEN_FILA[x.estado] - ORDEN_FILA[y.estado] || x.codigo.localeCompare(y.codigo, "es", { numeric: true }));
+    }));
+  // Los códigos que hablaron alguna vez pero no en los días que se leen: «Sin movimiento».
+  for (const [codigo, ultimo] of historial?.codigos ?? [])
+    if (codigo !== "" && !lista.some((f) => f.codigo === codigo))
+      lista.push({ codigo, estado: "quieto", ultimo, delMes: cifra ? 0 : null, pendientes: null });
+  return lista.sort((x, y) => ORDEN_FILA[x.estado] - ORDEN_FILA[y.estado] || x.codigo.localeCompare(y.codigo, "es", { numeric: true }));
 }
 
 /** El día de Madrid de una fecha, como medianoche UTC de ese día (para contar días sin líos de horario). */

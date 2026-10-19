@@ -1,4 +1,4 @@
-import { avisosDe } from "@/lib/datos";
+import { avisosDe, historialDe } from "@/lib/datos";
 import { poolDueno } from "@/lib/db";
 import { producto } from "@/lib/productos/cargar";
 import { resumenProducto, type ResumenProducto } from "@/lib/resumen";
@@ -27,7 +27,11 @@ export async function resumenDeTodos(ahora = new Date()): Promise<ResumenCliente
     if (!c) clientes.set(f.cliente_id, (c = { id: f.cliente_id, nombre: f.nombre, productos: [] }));
     const p = f.producto ? producto(f.producto) : undefined;
     if (!p || !f.contratacion_id) continue;
-    c.productos.push(resumenProducto(p, await avisosDe(f.cliente_id, f.contratacion_id), ahora));
+    const [{ avisos, incompleto }, historial] = await Promise.all([
+      avisosDe(f.cliente_id, f.contratacion_id),
+      historialDe(f.cliente_id, f.contratacion_id),
+    ]);
+    c.productos.push(resumenProducto(p, avisos, ahora, { historial, incompleto }));
   }
   return [...clientes.values()];
 }

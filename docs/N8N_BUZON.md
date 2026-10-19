@@ -53,7 +53,10 @@ try { archivadasPanel = $('Registrar Factura').all().length; } catch (e) {}
 try { nuevasPanel = $('Registrar Revision').all().map(function (x) { return x.json || {}; }); } catch (e) {}
 
 var avisosPanel = panelAvisosRevision(codigoPanel, nuevasPanel);
-avisosPanel.push(panelAvisoPasada(codigoPanel, archivadasPanel, panelPendientes(revisionPanel, cfgPanel.id_negocio)));
+var pendientesPanel = panelPendientes(revisionPanel, cfgPanel.id_negocio);
+// Solo si cambió algo o hace 12 h del último: así no llegan 24 avisos al día por negocio.
+if (panelDebeMandarPasada($getWorkflowStaticData('global'), codigoPanel, archivadasPanel, pendientesPanel, Date.now()))
+  avisosPanel.push(panelAvisoPasada(codigoPanel, archivadasPanel, pendientesPanel));
 return avisosPanel.map(function (a) { return { json: a }; });
 ```
 

@@ -1,9 +1,11 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
+import { after } from "next/server";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { config } from "@/lib/config";
 import { mandarEnlace } from "@/lib/correo";
 import { consultaApp, poolApp } from "@/lib/db";
+import { crearLimite } from "@/lib/limite";
 
 /**
  * Inicio de sesión con Better Auth (librería probada; nada hecho a mano).
@@ -12,8 +14,33 @@ import { consultaApp, poolApp } from "@/lib/db";
  * Better Auth usa la conexión de panel_app; sus tablas no tienen reglas por filas.
  */
 
+/** Como mucho 3 enlaces por correo cada 15 minutos: nadie puede llenarle el buzón a un cliente. */
+const enlacesPorCorreo = crearLimite(3, 10_000, 15 * 60_000);
+
+/**
+ * Se manda DESPUÉS de responder (after): así la respuesta tarda lo mismo y dice
+ * lo mismo tenga cuenta el correo o no, y si Resend falla nadie se entera
+ * desde fuera (queda en el log). Antes, un correo con cuenta tardaba más (la
+ * llamada a Resend) y, si Resend fallaba, daba 500: se podía adivinar quién es
+ * cliente (auditoría del 19-10-2026).
+ */
+function mandarEnSegundoPlano(email: string, url: string): void {
+  after(async () => {
+    try {
+      const correo = email.toLowerCase();
+      if (!enlacesPorCorreo(correo)) return;
+      if (await existeCuenta(correo)) await mandarEnlace(correo, url);
+    } catch (e) {
+      console.error("No se pudo mandar el enlace de entrada:", e);
+    }
+  });
+}
+
 async function crear() {
   if (!config.secreto) throw new Error("Falta BETTER_AUTH_SECRET.");
+  // Sin PANEL_URL, Better Auth haría el enlace con la dirección que diga quien
+  // lo pide (cabecera Host): podría mandarte un enlace bueno a una web falsa.
+  if (!config.url) throw new Error("Falta PANEL_URL.");
   return betterAuth({
     database: await poolApp(),
     secret: config.secreto,
@@ -30,9 +57,7 @@ async function crear() {
         storeToken: "hashed",
         // Solo se manda a quien tiene cuenta: si no, cualquiera podría usar el
         // formulario para mandar correos a quien quisiera. La respuesta es la misma.
-        sendMagicLink: async ({ email, url }) => {
-          if (await existeCuenta(email)) await mandarEnlace(email, url);
-        },
+        sendMagicLink: async ({ email, url }) => mandarEnSegundoPlano(email, url),
       }),
       // Siempre el último: deja que las Server Actions pongan la cookie de sesión.
       nextCookies(),

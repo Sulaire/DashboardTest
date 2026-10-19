@@ -57,7 +57,8 @@ export const enProduccion = () => process.env.NODE_ENV === "production";
 export function faltan(): string[] {
   const f: string[] = [];
   if (!config.baseDeDatos) f.push("DATABASE_URL: la base de datos (en Railway, añade un Postgres y enlaza su variable).");
-  if (!config.contrasenaApp) f.push("PANEL_DB_PASSWORD: contraseña larga y aleatoria para el usuario panel_app de la base de datos.");
+  if (!config.contrasenaApp || !/^[\x21-\x7e]{24,}$/.test(config.contrasenaApp))
+    f.push("PANEL_DB_PASSWORD: contraseña de 24 caracteres o más (sin espacios ni tildes) para el usuario panel_app de la base de datos.");
   if (!config.secreto) f.push("BETTER_AUTH_SECRET: cadena larga y aleatoria para firmar las sesiones.");
   if (!config.url) f.push("PANEL_URL: la dirección pública de la app (https://…).");
   if (!config.correoAdmin) f.push("PANEL_ADMIN_EMAIL: tu correo, para entrar como administrador.");

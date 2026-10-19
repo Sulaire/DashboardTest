@@ -3,8 +3,19 @@ export function json(datos: unknown, estado = 200) {
   return Response.json(datos, { status: estado, headers: { "Cache-Control": "no-store" } });
 }
 
+/**
+ * La IP de quien llama: X-Real-IP (la pone Railway) o, si no, el último salto
+ * de X-Forwarded-For (el primero lo puede inventar quien llama). Como en Cosmerito.
+ */
+export function ipDe(request: Request): string {
+  const real = request.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+  const saltos = request.headers.get("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean);
+  return saltos?.length ? saltos[saltos.length - 1] : "sin-ip";
+}
+
 /** Lee como mucho `maximo` bytes del cuerpo; si hay más, devuelve null sin seguir leyendo. */
-async function leerHasta(request: Request, maximo: number): Promise<string | null> {
+export async function leerHasta(request: Request, maximo: number): Promise<string | null> {
   const declarado = Number(request.headers.get("content-length"));
   if (declarado > maximo) return null;
   if (!request.body) return "";

@@ -27,12 +27,20 @@ test("el resumen no lleva códigos ni textos de los avisos", () => {
   assert.doesNotMatch(salida, /CANARIO/);
   assert.deepEqual(Object.keys(resumenProducto(buzon, avisos, ahora)).sort(), [
     "cifras",
+    "incompleto",
     "nombre",
     "por_revisar",
     "producto",
     "semaforo",
     "ultimo_aviso",
   ]);
+});
+
+test("callado hace meses: rojo, con su última fecha", () => {
+  const ultimo = new Date("2026-05-01T10:00:00Z");
+  const r = resumenProducto(buzon, [], ahora, { historial: { ultimo, codigos: new Map([["1", ultimo]]) } });
+  assert.equal(r.semaforo, "rojo");
+  assert.equal(r.ultimo_aviso, ultimo.toISOString());
 });
 
 test("sin avisos: gris y cifras a cero o vacías", () => {

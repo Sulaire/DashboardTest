@@ -1,4 +1,4 @@
-import { filas, semaforo, valorCrudo, valorDe, type Aviso } from "@/lib/calculos";
+import { filas, semaforo, valorCrudo, valorDe, type Aviso, type Historial } from "@/lib/calculos";
 import type { Color, Producto } from "@/lib/productos/tipos";
 
 /**
@@ -18,15 +18,23 @@ export type ResumenProducto = {
   /** Cuántos códigos (clientes de tu cliente) están en «Revisar», sin decir cuáles. */
   por_revisar: number;
   cifras: CifraResumen[];
+  /** true si había tantos avisos que no se leyeron todos (las cifras pueden quedarse cortas). */
+  incompleto: boolean;
 };
 
-export function resumenProducto(producto: Producto, avisos: Aviso[], ahora: Date): ResumenProducto {
+export function resumenProducto(
+  producto: Producto,
+  avisos: Aviso[],
+  ahora: Date,
+  extra: { historial?: Historial; incompleto?: boolean } = {},
+): ResumenProducto {
   const elementos = producto.bloques.flatMap((b) => (b.tipo === "cifras" ? b.elementos : []));
-  const ultimo = avisos.reduce<Date | null>((m, a) => (!m || a.recibido_en > m ? a.recibido_en : m), null);
+  const ultimo =
+    extra.historial?.ultimo ?? avisos.reduce<Date | null>((m, a) => (!m || a.recibido_en > m ? a.recibido_en : m), null);
   return {
     producto: producto.id,
     nombre: producto.nombre,
-    semaforo: semaforo(avisos, producto.silencio_horas, ahora, producto.abiertos),
+    semaforo: semaforo(avisos, producto.silencio_horas, ahora, producto.abiertos, extra.historial),
     ultimo_aviso: ultimo ? ultimo.toISOString() : null,
     por_revisar: filas(avisos, undefined, ahora, producto.abiertos).filter((f) => f.estado === "revisar").length,
     cifras: elementos.map((el) => {
@@ -38,5 +46,6 @@ export function resumenProducto(producto: Producto, avisos: Aviso[], ahora: Date
         texto: valorDe(el, avisos, ahora),
       };
     }),
+    incompleto: !!extra.incompleto,
   };
 }

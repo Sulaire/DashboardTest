@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { leerCuerpo } from "@/lib/api";
+import { ipDe, leerCuerpo } from "@/lib/api";
 
 const peticion = (cuerpo: string, tipo = "application/json") =>
   new Request("http://x/api/avisos", { method: "POST", headers: { "Content-Type": tipo }, body: cuerpo });
@@ -25,4 +25,11 @@ test("leerCuerpo: un cuerpo demasiado grande da 413 sin leerlo entero", async ()
   const sinTamano = new Request("http://x", { method: "POST", headers: { "Content-Type": "application/json" }, body: trozos, duplex: "half" } as RequestInit);
   const r2 = await leerCuerpo(sinTamano, 8_192);
   assert.ok("estado" in r2 && r2.estado === 413);
+});
+
+test("ipDe: X-Real-IP, o el último salto de X-Forwarded-For (nunca el primero)", () => {
+  const con = (h: Record<string, string>) => new Request("http://x", { headers: h });
+  assert.equal(ipDe(con({ "x-real-ip": "1.1.1.1", "x-forwarded-for": "9.9.9.9" })), "1.1.1.1");
+  assert.equal(ipDe(con({ "x-forwarded-for": "6.6.6.6, 2.2.2.2" })), "2.2.2.2");
+  assert.equal(ipDe(con({})), "sin-ip");
 });

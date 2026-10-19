@@ -171,6 +171,7 @@ export async function elegirBloques(contratacionId: string, elegidos: string[] |
   const p = fila && producto(fila.producto);
   if (!p) throw new Error("No encuentro ese producto.");
   const validos = elegidos ? p.bloques.map((b) => b.id).filter((id) => elegidos.includes(id)) : null;
+  if (validos && validos.length === 0) throw new Error("Elige al menos un bloque.");
   const todos = validos && validos.length === p.bloques.length;
   await pool.query("update contrataciones set bloques = $2 where id = $1", [contratacionId, todos ? null : validos]);
 }
@@ -181,12 +182,15 @@ export async function elegirBloques(contratacionId: string, elegidos: string[] |
  */
 export async function nuevaLlaveProducto(contratacionId: string): Promise<string> {
   const pool = await poolDueno();
-  const [c] = (await pool.query<{ cliente_id: string }>("select cliente_id from contrataciones where id = $1", [contratacionId])).rows;
-  if (!c) throw new Error("No encuentro esa contratación.");
   const llave = nuevaLlave();
   const conexion = await pool.connect();
   try {
     await conexion.query("begin");
+    // «for update»: si llegan dos peticiones a la vez, la segunda espera a la primera.
+    const [c] = (
+      await conexion.query<{ cliente_id: string }>("select cliente_id from contrataciones where id = $1 for update", [contratacionId])
+    ).rows;
+    if (!c) throw new Error("No encuentro esa contratación.");
     await conexion.query("update llaves_producto set revocada_en = now() where contratacion_id = $1 and revocada_en is null", [
       contratacionId,
     ]);
