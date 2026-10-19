@@ -14,8 +14,15 @@ export type Aviso = {
   recibido_en: Date;
 };
 
-/** Cuántos días de avisos se leen para pintar una pestaña (cubre «este mes» y el envío mensual). */
-export const DIAS_QUE_SE_LEEN = 40;
+/** Las semanas que puede enseñar como mucho una gráfica: tienen que caber en lo que se lee. */
+export const SEMANAS_MAXIMAS = 8;
+
+/**
+ * Cuántos días de avisos se leen para pintar una pestaña: cubre «este mes», el
+ * envío mensual y las semanas de la gráfica (la de ahora, a medias, y las
+ * anteriores enteras).
+ */
+export const DIAS_QUE_SE_LEEN = SEMANAS_MAXIMAS * 7 + 7;
 
 const ZONA = "Europe/Madrid";
 const formatoMes = new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, year: "numeric", month: "2-digit" });
@@ -28,6 +35,7 @@ const formatoFechaHora = new Intl.DateTimeFormat("es-ES", {
   minute: "2-digit",
 });
 const formatoNumero = new Intl.NumberFormat("es-ES");
+const formatoDia = new Intl.DateTimeFormat("en-CA", { timeZone: ZONA, year: "numeric", month: "2-digit", day: "2-digit" });
 
 /** "2026-10": el mes de una fecha en hora de Madrid. */
 export const mesDe = (fecha: Date) => formatoMes.format(fecha);
@@ -148,6 +156,39 @@ export function filas(avisos: Aviso[], cifra: string | undefined, ahora: Date, a
     }))
     .sort((x, y) => ORDEN_FILA[x.estado] - ORDEN_FILA[y.estado] || x.codigo.localeCompare(y.codigo, "es", { numeric: true }));
 }
+
+/** El día de Madrid de una fecha, como medianoche UTC de ese día (para contar días sin líos de horario). */
+function diaDe(fecha: Date): number {
+  const [a, m, d] = formatoDia.format(fecha).split("-").map(Number);
+  return Date.UTC(a, m - 1, d);
+}
+
+/** El lunes (hora de Madrid) de la semana de una fecha, como medianoche UTC. */
+function lunesDe(fecha: Date): number {
+  const dia = diaDe(fecha);
+  return dia - ((new Date(dia).getUTCDay() + 6) % 7) * 86_400_000;
+}
+
+export type Semana = { lunes: Date; total: number; enCurso: boolean };
+
+/** La suma de una cifra por semana, de la más vieja a la de ahora (que va a medias). */
+export function porSemana(avisos: Aviso[], cifra: string, semanas: number, ahora: Date): Semana[] {
+  const actual = lunesDe(ahora);
+  const sumas = new Map<number, number>();
+  for (const a of avisos) {
+    if (!(cifra in a.cifras)) continue;
+    const l = lunesDe(a.recibido_en);
+    sumas.set(l, (sumas.get(l) ?? 0) + a.cifras[cifra]);
+  }
+  return Array.from({ length: semanas }, (_, i) => {
+    const l = actual - (semanas - 1 - i) * 7 * 86_400_000;
+    return { lunes: new Date(l), total: sumas.get(l) ?? 0, enCurso: l === actual };
+  });
+}
+
+/** «13 oct»: la fecha de un lunes devuelto por porSemana (ya es medianoche UTC del día de Madrid). */
+export const fechaDeLunes = (lunes: Date) =>
+  new Intl.DateTimeFormat("es-ES", { timeZone: "UTC", day: "numeric", month: "short" }).format(lunes);
 
 /** Los últimos avisos con problema. */
 export function problemas(avisos: Aviso[], maximo: number): Aviso[] {

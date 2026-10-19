@@ -46,7 +46,7 @@ el porqué de cada decisión, está en Cosmerito (`docs/propuestas/dashboard-cli
 
 ## Fase 5 — Más adelante
 
-- [ ] Gráficas (por ejemplo, facturas por semana)
+- [x] Gráfica de facturas archivadas por semana
 - [ ] Avisos por correo, si los clientes los quieren
 - [ ] El panel con la marca de cada cliente
 - [ ] Cobros con Stripe

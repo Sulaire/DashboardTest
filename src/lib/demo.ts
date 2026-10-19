@@ -14,7 +14,7 @@ export function avisosDeDemo(ahora: Date): Aviso[] {
     // Cada cliente manda un aviso cada 1-3 días con las facturas que se archivaron.
     const cada = 1 + (i % 3);
     const callado = codigo === "021" ? 33 : 0; // uno que lleva un mes sin facturas (no cuenta como activo)
-    for (let d = callado; d < 38; d += cada) {
+    for (let d = callado; d < 62; d += cada) {
       const facturas = 1 + ((i * 7 + d * 3) % 5);
       avisos.push({
         codigo,

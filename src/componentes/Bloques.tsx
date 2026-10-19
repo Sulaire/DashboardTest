@@ -1,4 +1,15 @@
-import { fechaCorta, fechaYHora, filas, problemas, semaforo, valorDe, type Aviso, type Fila } from "@/lib/calculos";
+import {
+  fechaCorta,
+  fechaDeLunes,
+  fechaYHora,
+  filas,
+  porSemana,
+  problemas,
+  semaforo,
+  valorDe,
+  type Aviso,
+  type Fila,
+} from "@/lib/calculos";
 import type { Bloque, Color, Producto } from "@/lib/productos/tipos";
 
 /**
@@ -61,6 +72,85 @@ function Cifras({ bloque, avisos, ahora }: Props & { bloque: Extract<Bloque, { t
           </div>
         ))}
       </dl>
+    </Caja>
+  );
+}
+
+/**
+ * Columnas por semana. Una sola serie, así que sin leyenda: el título dice qué
+ * es. Columnas finas (24 px como mucho) con la punta redondeada, el valor
+ * escrito solo en la semana de ahora y en la más alta, y el resto al pasar el
+ * ratón o con el teclado; además, todos los datos en una tabla.
+ */
+function Grafica({ bloque, avisos, ahora }: Props & { bloque: Extract<Bloque, { tipo: "grafica" }> }) {
+  const semanas = porSemana(avisos, bloque.cifra, bloque.semanas, ahora);
+  const maximo = Math.max(...semanas.map((x) => x.total));
+  const iMax = semanas.findIndex((x) => x.total === maximo);
+  const nombre = (x: (typeof semanas)[number]) => (x.enCurso ? "Esta semana" : `Semana del ${fechaDeLunes(x.lunes)}`);
+  return (
+    <Caja titulo={bloque.titulo}>
+      {maximo === 0 ? (
+        <p className="text-texto-suave">Aún no hay datos para la gráfica.</p>
+      ) : (
+        <>
+          <div role="group" aria-label={bloque.titulo} className="flex h-40 items-end gap-0.5 border-b border-borde">
+            {semanas.map((x, i) => {
+              const conValor = x.enCurso || i === iMax;
+              return (
+                <div
+                  key={i}
+                  role="img"
+                  aria-label={`${nombre(x)}: ${x.total}`}
+                  tabIndex={0}
+                  className="group relative flex h-full flex-1 flex-col items-center justify-end"
+                >
+                  {conValor && x.total > 0 && (
+                    <span aria-hidden className="mb-1 text-xs tabular-nums text-texto-suave">
+                      {x.total}
+                    </span>
+                  )}
+                  <div
+                    className="w-full max-w-6 rounded-t bg-grafica group-hover:brightness-110 group-focus:brightness-110"
+                    style={{ height: `${(x.total / maximo) * 85}%` }}
+                  />
+                  <div aria-hidden className="pointer-events-none absolute bottom-full z-10 mb-1 hidden whitespace-nowrap rounded-md border border-borde bg-superficie px-2 py-1 text-xs shadow group-hover:block group-focus:block">
+                    <strong className="tabular-nums">{x.total}</strong> <span className="text-texto-suave">· {nombre(x)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div aria-hidden className="mt-1 flex gap-0.5">
+            {semanas.map((x, i) => (
+              <span key={i} className="flex-1 whitespace-nowrap text-center text-[11px] leading-tight text-texto-suave">
+                {/* En pantallas estrechas, una fecha sí y otra no (contando desde «ahora»), para que no se monten. */}
+                <span className={(semanas.length - 1 - i) % 2 === 0 ? "" : "hidden sm:inline"}>
+                  {x.enCurso ? "ahora" : fechaDeLunes(x.lunes)}
+                </span>
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+      <details className="mt-3 text-sm">
+        <summary className="cursor-pointer text-texto-suave">Ver los datos</summary>
+        <table className="mt-2 w-full text-left">
+          <thead className="text-texto-suave">
+            <tr>
+              <th className="py-1 pr-4 font-medium">Semana</th>
+              <th className="py-1 text-right font-medium">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {semanas.map((x, i) => (
+              <tr key={i} className="border-t border-borde">
+                <td className="py-1 pr-4">{nombre(x)}{x.enCurso && " (a medias)"}</td>
+                <td className="py-1 text-right tabular-nums">{x.total}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
     </Caja>
   );
 }
@@ -145,6 +235,8 @@ export function Pestana({ producto, bloques, avisos, ahora }: Props & { bloques:
             return <Semaforo key={b.id} bloque={b} {...p} />;
           case "cifras":
             return <Cifras key={b.id} bloque={b} {...p} />;
+          case "grafica":
+            return <Grafica key={b.id} bloque={b} {...p} />;
           case "lista":
             return <Lista key={b.id} bloque={b} {...p} />;
           case "avisos":

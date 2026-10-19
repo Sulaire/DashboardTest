@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { filas, mesDe, problemas, semaforo, valorDe, type Aviso } from "@/lib/calculos";
+import { fechaDeLunes, filas, mesDe, porSemana, problemas, semaforo, valorDe, type Aviso } from "@/lib/calculos";
 import { avisosDeDemo } from "@/lib/demo";
 
 const ahora = new Date("2026-10-15T10:00:00Z");
@@ -77,6 +77,29 @@ test("lista con «abiertos»: Revisar con cuántas le quedan", () => {
     [
       ["1", "revisar", 2],
       ["2", "bien", 0],
+    ],
+  );
+});
+
+test("por semana: de lunes a domingo en hora de Madrid, la de ahora a medias", () => {
+  // ahora = jueves 15-10-2026 12:00 en Madrid; su lunes es el 12.
+  const semanas = porSemana(
+    [
+      { ...aviso("1", true, 0, { facturas: 3 }), recibido_en: new Date("2026-10-12T00:30:00+02:00") }, // lunes 12, recién empezado
+      { ...aviso("1", true, 0, { facturas: 2 }), recibido_en: new Date("2026-10-11T23:30:00+02:00") }, // domingo 11: semana anterior
+      { ...aviso("2", true, 0, { facturas: 5 }), recibido_en: new Date("2026-09-28T10:00:00+02:00") },
+      { ...aviso("2", true, 0, { otra: 9 }), recibido_en: new Date("2026-10-13T10:00:00+02:00") },
+    ],
+    "facturas",
+    3,
+    ahora,
+  );
+  assert.deepEqual(
+    semanas.map((x) => [fechaDeLunes(x.lunes), x.total, x.enCurso]),
+    [
+      ["28 sept", 5, false],
+      ["5 oct", 2, false],
+      ["12 oct", 3, true],
     ],
   );
 });

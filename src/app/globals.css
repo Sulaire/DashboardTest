@@ -26,6 +26,8 @@
   --rojo-fondo: #fbe4e4;
   --gris: #5c6475;
   --gris-fondo: #eceef2;
+  /* Las barras de las gráficas: validado con la guía de dataviz (franja de luz y contraste con la superficie). */
+  --grafica: #3550c8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,6 +49,7 @@
     --rojo-fondo: #3a1717;
     --gris: #a3abba;
     --gris-fondo: #232833;
+    --grafica: #7487f0;
   }
 }
 
@@ -67,6 +70,7 @@
   --color-rojo-fondo: var(--rojo-fondo);
   --color-gris: var(--gris);
   --color-gris-fondo: var(--gris-fondo);
+  --color-grafica: var(--grafica);
 }
 
 body {

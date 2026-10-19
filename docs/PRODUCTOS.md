@@ -27,6 +27,10 @@ Bloques:
   - `ultima_fecha` + `cifra`: la fecha del último aviso que la trae.
   - `actual` + `cifra`: lo que vale ahora (el último valor de cada código, sumado). Para recuentos como «por revisar».
   - `codigos_activos` + `dias`: cuántos códigos mandaron algo en esos días.
+- `grafica`: columnas con la suma de una `cifra` por semana (de lunes a
+  domingo, hora de Madrid); `semanas` entre 2 y 8. La de ahora va a medias
+  y se marca «ahora». Al pasar el ratón (o con el teclado) sale el número de
+  cada semana, y «Ver los datos» los enseña en una tabla.
 - `lista`: un renglón por código; con `cifra`, su suma del mes. Si el producto tiene `abiertos`, el «Revisar» lleva cuántos le quedan.
 - `avisos`: los últimos problemas; `maximo` entre 1 y 100.
 

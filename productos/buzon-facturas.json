@@ -50,6 +50,13 @@
       ]
     },
     {
+      "id": "semanas",
+      "tipo": "grafica",
+      "titulo": "Facturas archivadas por semana",
+      "cifra": "facturas",
+      "semanas": 8
+    },
+    {
       "id": "clientes",
       "tipo": "lista",
       "titulo": "Tus clientes",

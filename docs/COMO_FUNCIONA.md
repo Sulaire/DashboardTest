@@ -90,6 +90,7 @@ bloques (`src/componentes/Bloques.tsx`) valen para cualquier producto:
 |---|---|
 | semáforo | gris: nunca llegó nada · rojo: lleva más de `silencio_horas` callado · ámbar: algún código tiene algo abierto · verde: lo demás |
 | cifras | sumas del mes (hora de Madrid), lo que vale ahora una cifra (`actual`), la fecha del último aviso que trae una cifra, códigos activos |
+| gráfica | columnas por semana de una cifra (las últimas 8 como mucho), con su tabla |
 | lista | un renglón por código: Revisar / Bien / Sin movimiento (30 días sin nada) |
 | avisos | los últimos problemas (`ok: false`) |
 

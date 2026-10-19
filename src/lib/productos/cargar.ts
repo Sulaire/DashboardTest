@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { SEMANAS_MAXIMAS } from "@/lib/calculos";
 import { TIPOS_BLOQUE, type Bloque, type Producto } from "@/lib/productos/tipos";
 
 /**
@@ -55,6 +56,11 @@ export function validarProducto(dato: unknown): { producto: Producto } | { error
             if (!(typeof el.dias === "number" && el.dias > 0)) e.push(`${quien}: 'dias' tiene que ser mayor que 0.`);
           } else e.push(`${quien}: cálculo desconocido (suma_mes, ultima_fecha, actual, codigos_activos).`);
         }
+      }
+      if (b.tipo === "grafica") {
+        if (!conocida(b.cifra)) e.push(`${quien}: la cifra '${b.cifra}' no está en 'cifras'.`);
+        if (!(Number.isInteger(b.semanas) && b.semanas >= 2 && b.semanas <= SEMANAS_MAXIMAS))
+          e.push(`${quien}: 'semanas' entre 2 y ${SEMANAS_MAXIMAS}.`);
       }
       if (b.tipo === "lista" && b.cifra !== undefined && !conocida(b.cifra)) e.push(`${quien}: la cifra '${b.cifra}' no está en 'cifras'.`);
       if (b.tipo === "avisos" && !(Number.isInteger(b.maximo) && b.maximo > 0 && b.maximo <= 100))

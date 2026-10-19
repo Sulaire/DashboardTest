@@ -22,11 +22,13 @@ export type Bloque =
   | { id: string; tipo: "cifras"; titulo: string; elementos: Elemento[] }
   /** Un renglón por código, con su semáforo y (si se dice) la suma del mes de una cifra. */
   | { id: string; tipo: "lista"; titulo: string; cifra?: string }
+  /** Columnas con la suma de una cifra por semana (de lunes a domingo, hora de Madrid), las últimas `semanas`. */
+  | { id: string; tipo: "grafica"; titulo: string; cifra: string; semanas: number }
   /** Los últimos avisos con ok: false. */
   | { id: string; tipo: "avisos"; titulo: string; maximo: number };
 
 export type TipoBloque = Bloque["tipo"];
-export const TIPOS_BLOQUE: TipoBloque[] = ["semaforo", "cifras", "lista", "avisos"];
+export const TIPOS_BLOQUE: TipoBloque[] = ["semaforo", "cifras", "grafica", "lista", "avisos"];
 
 export type Producto = {
   id: string;
