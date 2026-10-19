@@ -117,4 +117,21 @@ Las facturas nunca pasan por aquí.
 ## Lo que se ve sin entrar
 
 Solo `/entrar`, `/demo` (datos inventados) y `/api/salud`. Todo lo demás pide
-sesión. `/api/avisos` pide una llave de producto.
+sesión. `/api/avisos` pide una llave de producto, y
+`/api/cosmerito/v1/resumen` (semáforo y cifras de cada cliente, para
+Cosmerito: `docs/COSMERITO.md`) su propia llave.
+
+## Frenos
+
+`/api/avisos` no lee cuerpos de más de 8 KB y acepta como mucho 120 avisos
+por minuto de cada producto contratado (y 1.200 en total). Si una llave se
+filtra o un flujo de n8n entra en bucle, el panel responde 429 en vez de
+llenarse la base de datos. La cuenta vive en memoria (`src/lib/limite.ts`):
+al reiniciar se pone a cero.
+
+## Dar de baja a un cliente
+
+En `/admin`, «Dar de baja y borrar todos sus datos» (hay que escribir su
+nombre). Borra sus productos, llaves y avisos, y las cuentas de sus personas
+que no tengan acceso a otro cliente. Quitar a la última persona de un cliente
+también borra su cuenta: no hay por qué guardar su correo.

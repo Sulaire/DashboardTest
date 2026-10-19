@@ -23,6 +23,7 @@ el porqué de cada decisión, está en Cosmerito (`docs/propuestas/dashboard-cli
 - [x] Cada cliente elige qué bloques quiere ver
 - [x] Panel de administración para dar de alta clientes, personas y productos
 - [x] Lo que llega se borra solo a los 12 meses
+- [x] Dar de baja a un cliente borra todos sus datos de una vez
 - [ ] Publicar la aplicación en internet, con su dirección
 - [ ] Mandar los correos de entrada desde un remitente propio
 - [ ] Enseñar la demostración a la gestoría y apuntar qué quiere ver
@@ -35,7 +36,7 @@ el porqué de cada decisión, está en Cosmerito (`docs/propuestas/dashboard-cli
 
 ## Fase 3 — Cosmerito lo vigila
 
-- [ ] Un resumen por cliente para Cosmerito (semáforo y cifras), con su propia llave
+- [x] Un resumen por cliente para Cosmerito (semáforo y cifras), con su propia llave
 - [ ] Si algo falla, sale en Cosmerito y en su Telegram
 - [ ] Cosmerito comprueba cada poco que el panel está en línea
 

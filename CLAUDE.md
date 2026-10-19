@@ -12,6 +12,7 @@ Nombre provisional (se cambia en `src/lib/marca.ts`).
 - Cómo se describe un producto: `docs/PRODUCTOS.md`.
 - Protección de datos y lo que va en el contrato de encargo: `docs/PROTECCION_DE_DATOS.md`.
 - Cómo se publica en Railway: `docs/DESPLIEGUE.md`.
+- Cómo lo vigila Cosmerito (salud y resumen por cliente): `docs/COSMERITO.md`.
 
 Jordi está aprendiendo a programar. Explícale las cosas en español, sin jerga
 innecesaria, y deja por escrito el porqué de cada decisión.
@@ -44,12 +45,14 @@ npm run dev                  # http://localhost:3000 — sin Resend, el enlace p
 ## Seguridad (no romper)
 
 - **Cada cliente solo ve lo suyo, aunque el código falle.** Las tablas con datos de un cliente llevan seguridad por filas de Postgres. La app usa el usuario `panel_app` (no es dueño de nada, no puede saltarse reglas) y entra en nombre de un cliente solo con `comoCliente` (`src/lib/db.ts`), que lo dice con `SET LOCAL` (`set_config(…, true)`), nunca con `SET`: las conexiones se reutilizan. Toda tabla nueva con `cliente_id` lleva su regla en la misma migración.
-- La conexión del dueño (`poolDueno`) se salta las reglas: solo la usan `src/lib/admin.ts` y `src/lib/retencion.ts`. `lib/admin` solo se importa desde `src/app/admin/`, y cada acción de `src/app/admin/acciones.ts` empieza con `exigirAdmin()`: las Server Actions son rutas públicas por debajo.
+- La conexión del dueño (`poolDueno`) se salta las reglas: solo la usan `src/lib/admin.ts`, `src/lib/retencion.ts` y `src/lib/resumen-datos.ts` (solo para listar clientes; sus avisos los lee con `comoCliente`). `lib/admin` solo se importa desde `src/app/admin/`, y cada acción de `src/app/admin/acciones.ts` empieza con `exigirAdmin()`: las Server Actions son rutas públicas por debajo.
 - Entrar: Better Auth con enlace mágico, sin registro abierto (`disableSignUp`); el enlace solo se manda a correos con cuenta; el formulario responde lo mismo exista o no. La IP sale de `X-Real-IP`. Nada de inicios de sesión hechos a mano.
 - `/api/avisos`: la llave del producto decide el cliente (nunca el cuerpo). De las llaves solo se guarda su huella. El texto rechaza correos, teléfonos, DNI/NIE e importes; las cifras solo pueden ser recuentos declarados por el producto (`src/lib/avisos.ts`). Nunca importes ni datos personales, ni el contenido de una factura.
+- `/api/avisos` tiene freno: cuerpo de 8 KB como mucho, 120 avisos por minuto por producto y 1.200 en total (`src/lib/limite.ts`).
+- `/api/cosmerito/v1/resumen` solo abre con `PANEL_COSMERITO_TOKEN` (ni sesión ni llave de producto) y solo da lo que prepara `src/lib/resumen.ts`: semáforo y cifras, nunca códigos ni textos de avisos ni correos.
 - Los clientes de la gestoría son **códigos**, no nombres. Las facturas no se guardan aquí.
 - Los avisos se borran a los 12 meses (`src/lib/retencion.ts`): está en el contrato de encargo, no lo alargues sin hablarlo con Jordi.
-- Lo único visible sin entrar: `/entrar`, `/demo` (datos inventados, no importa nada real) y `/api/salud`.
+- Lo único visible sin entrar: `/entrar`, `/demo` (datos inventados, no importa nada real) y `/api/salud`. `/api/avisos` pide llave de producto y `/api/cosmerito/v1/resumen` la de Cosmerito.
 - La API solo acepta cuerpos JSON y no devuelve detalles internos en los errores (van al log).
 - Cabeceras CSP/HSTS en `next.config.ts` (la CSP solo en producción: en `next dev` provoca recargas en bucle). Si añades algo que cargue de fuera, permítelo ahí.
 - Nada secreto en el repo: las claves van en variables de entorno de Railway (`.env.example` dice cuáles).

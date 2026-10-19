@@ -26,7 +26,7 @@ En n8n, un nodo **HTTP Request**:
 | Campo | Qué es |
 |---|---|
 | `producto` | El id del producto. Tiene que ser el de la llave. |
-| `cliente` | Opcional. El **código** del cliente de la gestoría (el `id_negocio` de la v3). Nunca un nombre. Letras, números, `.`, `_`, `-`; hasta 32. |
+| `cliente` | Opcional. El **código** del cliente de la gestoría (en el buzón, `codigo_panel`: ver abajo). Nunca un nombre. Letras, números, `.`, `_`, `-`; hasta 32. |
 | `ok` | `true` si fue bien, `false` si hay algo que revisar. |
 | `texto` | Una frase corta (160 caracteres como mucho). Sin correos, teléfonos, DNI ni importes: se rechaza. |
 | `cifras` | Opcional. Recuentos (enteros ≥ 0) de las cifras que declara el producto. |
@@ -38,8 +38,17 @@ cuerpo no vale; `401` si la llave no vale o está anulada.
 
 Sacado de leer la v3 (`Sulaire/n8n_Facturas_Picasso`, rama
 `claude/awesome-planck-rbxg9a`, el 17-10-2026). Las cifras del buzón son
-`facturas`, `pendientes` y `enviadas`. El código (`cliente`) es el
-`id_negocio` de la hoja `Negocios`.
+`facturas`, `pendientes` y `enviadas`.
+
+### El código de cada negocio: no vale `id_negocio`
+
+En la v3, `id_negocio` es el nombre del negocio en mayúsculas (`BARPICASSO`).
+Si se mandara tal cual, el panel guardaría el nombre de los clientes de la
+gestoría, que es justo lo que no queremos. Hace falta un código neutro: una
+columna nueva `codigo_panel` en la hoja `Negocios` (lo ideal, el número de
+cliente que use la propia gestoría, p. ej. `017`; si no, uno correlativo), y
+mandar ese en `cliente`. La gestoría sabe qué negocio es cada número; el
+panel, no.
 
 ### La idea: un recuento de lo que queda, no avisos sueltos
 
@@ -56,9 +65,9 @@ aviso fue bueno»: cada pasada manda **cuántas quedan por revisar ahora**
 
 | Cuándo (workflow) | Aviso |
 |---|---|
-| Ingesta (04), al acabar cada pasada de un negocio (junto a `Resumen` → `Avisar Telegram`) | `cliente: id_negocio`, `ok: true`, `texto: "3 facturas archivadas"`, `cifras: { "facturas": 3, "pendientes": 1 }` |
-| Ingesta (04), por cada fila **nueva** de `Revision` que no sea un descarte | `cliente: id_negocio`, `ok: false`, `texto` según el motivo (abajo), sin cifras |
-| Envío a la gestoría (06, el día 3 de cada mes) | `cliente: id_negocio`, `ok: true`, `texto: "Envío mensual a la gestoría hecho"`, `cifras: { "enviadas": 6 }` |
+| Ingesta (04), al acabar cada pasada de un negocio (junto a `Resumen` → `Avisar Telegram`) | `cliente: codigo_panel`, `ok: true`, `texto: "3 facturas archivadas"`, `cifras: { "facturas": 3, "pendientes": 1 }` |
+| Ingesta (04), por cada fila **nueva** de `Revision` que no sea un descarte | `cliente: codigo_panel`, `ok: false`, `texto` según el motivo (abajo), sin cifras |
+| Envío a la gestoría (06, el día 3 de cada mes) | `cliente: codigo_panel`, `ok: true`, `texto: "Envío mensual a la gestoría hecho"`, `cifras: { "enviadas": 6 }` |
 | Notificador de errores (02) | sin `cliente`, `ok: false`, `texto: "El buzón ha tenido un error y se está revisando"` |
 | Canario (03), si cae una credencial | sin `cliente`, `ok: false`, `texto: "El buzón no puede leer el correo ahora mismo: se está arreglando"` |
 | Canario (03), cuando vuelve a ir bien | sin `cliente`, `ok: true`, `texto: "El buzón vuelve a leer el correo"` (cierra el aviso anterior) |

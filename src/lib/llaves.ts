@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 /**
  * Las llaves de los productos (con las que n8n manda sus avisos). Solo se
@@ -20,3 +20,8 @@ export function llaveDeCabecera(cabecera: string | null): string | null {
   return m ? m[1] : null;
 }
 
+
+/** Compara dos secretos sin dar pistas por el tiempo que tarda (se comparan sus huellas, siempre del mismo largo). */
+export function igualesSecretos(a: string, b: string): boolean {
+  return timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest());
+}

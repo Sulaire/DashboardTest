@@ -83,26 +83,32 @@ export function semaforo(avisos: Aviso[], silencioHoras: number, ahora: Date, ab
   return "verde";
 }
 
-/** El valor de una cifra del bloque «cifras», ya escrito para la pantalla. */
-export function valorDe(elemento: Elemento, avisos: Aviso[], ahora: Date): string {
+/** El valor de una cifra del bloque «cifras», tal cual: un número, una fecha o nada. */
+export function valorCrudo(elemento: Elemento, avisos: Aviso[], ahora: Date): number | Date | null {
   if (elemento.calculo === "suma_mes") {
     const mes = mesDe(ahora);
     let suma = 0;
     for (const a of avisos) if (mesDe(a.recibido_en) === mes) suma += a.cifras[elemento.cifra] ?? 0;
-    return formatoNumero.format(suma);
+    return suma;
   }
   if (elemento.calculo === "actual") {
     let suma = 0;
     for (const v of ultimoValor(avisos, elemento.cifra).values()) suma += v;
-    return formatoNumero.format(suma);
+    return suma;
   }
   if (elemento.calculo === "ultima_fecha") {
     const ultimo = ordenados(avisos).find((a) => elemento.cifra in a.cifras);
-    return ultimo ? fechaCorta(ultimo.recibido_en) : "—";
+    return ultimo ? ultimo.recibido_en : null;
   }
   const desde = ahora.getTime() - elemento.dias * 86_400_000;
-  const codigos = new Set(avisos.filter((a) => a.codigo && a.recibido_en.getTime() >= desde).map((a) => a.codigo));
-  return formatoNumero.format(codigos.size);
+  return new Set(avisos.filter((a) => a.codigo && a.recibido_en.getTime() >= desde).map((a) => a.codigo)).size;
+}
+
+/** El mismo valor, ya escrito para la pantalla. */
+export function valorDe(elemento: Elemento, avisos: Aviso[], ahora: Date): string {
+  const v = valorCrudo(elemento, avisos, ahora);
+  if (v === null) return "—";
+  return v instanceof Date ? fechaCorta(v) : formatoNumero.format(v);
 }
 
 /** Un código sin ningún aviso en estos días sale como «Sin movimiento» en la lista. */

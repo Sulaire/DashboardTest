@@ -15,8 +15,9 @@ firmarlo).
 - **Qué no guarda:** ni facturas, ni importes, ni nombres o datos de los
   clientes de la gestoría. Las facturas siguen en el Drive o el correo del
   cliente.
-- **Cuánto tiempo:** los avisos se borran solos a los **12 meses**. Las
-  cuentas, cuando la gestoría deja el servicio (se quitan en `/admin`).
+- **Cuánto tiempo:** los avisos se borran solos a los **12 meses**. Cuando la
+  gestoría deja el servicio, «Dar de baja» en `/admin` borra de una vez todo
+  lo suyo: productos, avisos y las cuentas de sus personas.
 - **Dónde:** la base de datos de Railway del panel. Los correos de entrada
   los manda Resend (subencargado: solo ve la dirección de correo de quien entra).
 - **Quién lo ve:** la gestoría, solo lo suyo (garantizado por la base de
@@ -29,3 +30,5 @@ firmarlo).
   cifras que no sean recuentos declarados (`src/lib/avisos.ts`).
 - Cada cliente solo ve sus filas, aunque falle el código (seguridad por filas).
 - Las llaves de los productos se guardan solo como huella.
+- Cosmerito solo recibe semáforo y cifras por cliente (`docs/COSMERITO.md`),
+  nunca los códigos ni los textos.

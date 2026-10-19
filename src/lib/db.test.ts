@@ -5,6 +5,7 @@ import * as admin from "@/lib/admin";
 import { avisosDe, clientesDeUsuario, destinoDeLlave, guardarAviso, nombreCliente, pestanas } from "@/lib/datos";
 import { cerrarDb, comoCliente, consultaApp, poolApp, poolDueno } from "@/lib/db";
 import { borrarAvisosViejos } from "@/lib/retencion";
+import { resumenDeTodos } from "@/lib/resumen-datos";
 
 /**
  * Pruebas con Postgres de verdad: solo corren con TEST_DATABASE_URL apuntando
@@ -166,6 +167,16 @@ test("dar de baja un cliente borra todo lo suyo y nada de otro", sin, async () =
   assert.equal((await pool.query(`select 1 from "user" where email = 'solo-de-c@ejemplo.es'`)).rows.length, 0);
   assert.equal((await pool.query(`select 1 from "user" where email = 'jordi@ejemplo.es'`)).rows.length, 1);
   assert.equal((await comoCliente(B, (c) => c.query("select count(*)::int as n from avisos"))).rows[0].n, antesB);
+});
+
+test("el resumen para Cosmerito trae a todos los clientes y nada de sus códigos ni textos", sin, async () => {
+  const r = await resumenDeTodos();
+  const a = r.find((c) => c.id === A)!;
+  assert.equal(a.nombre, "Gestoría A");
+  assert.equal(a.productos[0].producto, "buzon-facturas");
+  assert.ok(r.some((c) => c.id === B));
+  const salida = JSON.stringify(r);
+  assert.doesNotMatch(salida, /"017"|"099"|PDF ilegible|facturas archivadas/);
 });
 
 test("panel_app no puede crear nada en el esquema", sin, async () => {

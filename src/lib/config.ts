@@ -37,6 +37,14 @@ export const config = {
   get resendClave() {
     return leer("RESEND_API_KEY");
   },
+  /**
+   * La llave con la que Cosmerito pide el resumen de los clientes
+   * (/api/cosmerito/v1/resumen). Opcional; si es corta, no vale.
+   */
+  get tokenCosmerito() {
+    const t = leer("PANEL_COSMERITO_TOKEN");
+    return t && t.length >= 32 ? t : undefined;
+  },
   /** Remitente de los correos, p. ej. "Panel <entrar@tudominio.es>". */
   get correoDe() {
     return leer("PANEL_CORREO_DE");

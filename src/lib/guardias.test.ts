@@ -45,7 +45,7 @@ test("el cliente se pone solo con SET LOCAL (set_config(…, true))", () => {
 });
 
 test("la conexión del dueño (se salta las reglas) solo la usan admin y la limpieza", () => {
-  const permitidos = new Set(["src/lib/db.ts", "src/lib/admin.ts", "src/lib/retencion.ts", "src/lib/db.test.ts", "src/lib/guardias.test.ts"]);
+  const permitidos = new Set(["src/lib/db.ts", "src/lib/admin.ts", "src/lib/retencion.ts", "src/lib/resumen-datos.ts", "src/lib/db.test.ts", "src/lib/guardias.test.ts"]);
   for (const a of codigo) if (/poolDueno/.test(leer(a))) assert.ok(permitidos.has(a), `${a} usa poolDueno`);
 });
 
@@ -65,7 +65,21 @@ test("cada acción del administrador comprueba que eres el administrador", () =>
 
 test("las rutas de la API son las conocidas (una nueva se revisa y se añade aquí)", () => {
   const rutas = codigo.filter((a) => a.startsWith("src/app/api/") && a.endsWith("route.ts")).sort();
-  assert.deepEqual(rutas, ["src/app/api/auth/[...all]/route.ts", "src/app/api/avisos/route.ts", "src/app/api/salud/route.ts"]);
+  assert.deepEqual(rutas, [
+    "src/app/api/auth/[...all]/route.ts",
+    "src/app/api/avisos/route.ts",
+    "src/app/api/cosmerito/v1/resumen/route.ts",
+    "src/app/api/salud/route.ts",
+  ]);
+});
+
+test("la puerta de Cosmerito solo abre con su llave y solo da el resumen", () => {
+  const ruta = leer("src/app/api/cosmerito/v1/resumen/route.ts");
+  assert.match(ruta, /igualesSecretos\(llave, esperada\)/);
+  assert.doesNotMatch(ruta, /quienSoy|@\/lib\/sesion|@\/lib\/admin|@\/lib\/datos/);
+  // Lo que se manda sale solo de resumen.ts, que no toca ni códigos ni textos.
+  const resumen = leer("src/lib/resumen.ts");
+  assert.doesNotMatch(resumen, /\.codigo\b|\.texto\b/);
 });
 
 test("la demo no toca nada real", () => {
