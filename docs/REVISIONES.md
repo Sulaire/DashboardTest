@@ -31,3 +31,12 @@ acción de admin compruebe al administrador, Better Auth (sin registro, sin
 redirección abierta, enlaces de un solo uso y con huella, sesiones en la
 base de datos), la puerta de Cosmerito, las horas de Madrid con los cambios de
 hora y que las páginas no se guarden en caché entre personas.
+
+## Repo público (19-10-2026)
+
+`Sulaire/DashboardTest` es **público** y su ficha está en sigilo. En los
+archivos no hay nombre de la gestoría ni datos de nadie; el nombre del bar
+del buzón, que salía en pruebas y documentos, se cambió por nombres de
+ejemplo. Los commits antiguos todavía lo llevan: si importa, lo sencillo es
+hacer el repo privado (GitHub → Settings → General → Danger Zone → Change
+visibility). Lo decide Jordi.

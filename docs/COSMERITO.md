@@ -67,15 +67,21 @@ curl -s -H "Authorization: Bearer $PANEL_COSMERITO_TOKEN" "$PANEL_URL/api/cosmer
   una prueba de guardia.
 - `version: 1`: si algún día cambia el formato, sube y Cosmerito debe avisar.
 
-## Lo que falta en Cosmerito (fase 3)
+## En Cosmerito (fase 3, hecho el 19-10-2026)
 
-En Cosmerito hace falta, cuando se haga:
+En la rama `claude/new-session-f28w15` de Cosmerito (`src/lib/panel-clientes.ts`):
 
-- Dos variables: la dirección del panel y `PANEL_COSMERITO_TOKEN`.
-- Pedir el resumen desde el servidor, solo por https y sin seguir
-  redirecciones (como las llamadas a la Couple App), con la respuesta tratada
-  como datos.
-- Enseñarlo en Hoy: un semáforo por cliente y producto. Un `rojo` o un `ambar`
-  que dure, como incidente (y en el Telegram de la revista).
-- La salud (`/api/salud`) ya la vigila en cuanto `hub.json` tenga
-  `despliegue.salud`.
+- Dos variables: `PANEL_CLIENTES_URL` (la dirección del panel) y
+  `PANEL_COSMERITO_TOKEN` (la misma llave que aquí). Pasos en su
+  `docs/DESPLIEGUE.md` §9.
+- Pide el resumen desde el servidor, solo por https y sin seguir
+  redirecciones, y lo comprueba campo a campo (si la versión no es la 1 o
+  algo no encaja, no enseña nada y dice por qué).
+- **Hoy**: una línea por cliente y producto con su semáforo dicho con
+  palabras, lo que hay por revisar y las cifras; lo rojo y lo ámbar arriba.
+- **La revista (Telegram)**: un incidente si un producto se calla (rojo) y
+  otro si Cosmerito no puede leer el resumen (llave, dirección o formato).
+  Lo ámbar se ve en Hoy pero no manda Telegram (tener facturas por revisar
+  es el día a día, no un fallo); se cambia con `AVISAR_POR_REVISAR`.
+- La salud (`/api/salud`) la vigilará en cuanto `hub.json` tenga
+  `despliegue.salud`, al publicar.

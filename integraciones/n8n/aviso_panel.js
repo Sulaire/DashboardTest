@@ -1,5 +1,5 @@
 // ===== Avisos para el panel de clientes (Dashboard de clientes) =====
-// Para el buzón de facturas v3 (repo Sulaire/n8n_Facturas_Picasso). Vive aquí,
+// Para el buzón de facturas v3 (su repo es, en Cosmerito, el proyecto facturas-picasso). Vive aquí,
 // en el repo del panel, porque sus pruebas comprueban que lo que genera pasa el
 // filtro de /api/avisos. Para usarlo en n8n se copia entero en un nodo Code y
 // se llama a sus funciones desde el cuerpo del nodo (ver docs/N8N_BUZON.md).
@@ -37,7 +37,7 @@ var PANEL_DESCARTES = ['albaran', 'extracto_bancario', 'otro_suministro_no_es_de
 var PANEL_CODIGO = /^(?=.*\d)[A-Za-z0-9._-]{1,32}$/;
 
 // El código del negocio para el panel: la columna codigo_panel de Negocios.
-// NUNCA id_negocio (en la v3 es el nombre: BARPICASSO). Sin código, null: no se manda nada.
+// NUNCA id_negocio (en la v3 es el nombre del negocio en mayúsculas). Sin código, null: no se manda nada.
 function panelCodigo(filaNegocio) {
   var c = String((filaNegocio && filaNegocio.codigo_panel) || '').trim();
   return PANEL_CODIGO.test(c) ? c : null;

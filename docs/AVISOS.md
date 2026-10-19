@@ -36,13 +36,13 @@ cuerpo no vale; `401` si la llave no vale o está anulada.
 
 ## Qué mandar desde el buzón (v3)
 
-Sacado de leer la v3 (`Sulaire/n8n_Facturas_Picasso`, rama
-`claude/awesome-planck-rbxg9a`, el 17-10-2026). Las cifras del buzón son
+Sacado de leer la v3 (el repo del buzón, en Cosmerito el proyecto
+`facturas-picasso`, rama `claude/awesome-planck-rbxg9a`, el 17-10-2026). Las cifras del buzón son
 `facturas`, `pendientes` y `enviadas`.
 
 ### El código de cada negocio: no vale `id_negocio`
 
-En la v3, `id_negocio` es el nombre del negocio en mayúsculas (`BARPICASSO`).
+En la v3, `id_negocio` es el nombre del negocio en mayúsculas (algo como `BARDEEJEMPLO`).
 Si se mandara tal cual, el panel guardaría el nombre de los clientes de la
 gestoría, que es justo lo que no queremos. Hace falta un código neutro: una
 columna nueva `codigo_panel` en la hoja `Negocios` (lo ideal, el número de

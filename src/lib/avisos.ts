@@ -78,7 +78,7 @@ export function limpiarAviso(
     const c = typeof cuerpo.cliente === "number" ? String(cuerpo.cliente) : cuerpo.cliente;
     if (typeof c !== "string" || !CODIGO.test(c))
       return { error: "'cliente' es un código corto (letras, números, . _ -), nunca un nombre." };
-    // Un código lleva al menos una cifra: así un nombre («BARPICASSO», «ana.garcia») no pasa por código.
+    // Un código lleva al menos una cifra: así un nombre («BARDEEJEMPLO», «ana.garcia») no pasa por código.
     if (!/\d/.test(c))
       return { error: "'cliente' tiene que llevar al menos una cifra (p. ej. el número de cliente de la gestoría): un nombre no vale." };
     if (CODIGO_PROHIBIDO.test(c))

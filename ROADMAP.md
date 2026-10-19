@@ -38,7 +38,7 @@ el porqué de cada decisión, está en Cosmerito (`docs/propuestas/dashboard-cli
 ## Fase 3 — Cosmerito lo vigila
 
 - [x] Un resumen por cliente para Cosmerito (semáforo y cifras), con su propia llave
-- [ ] Si algo falla, sale en Cosmerito y en su Telegram
+- [x] Cómo va cada cliente, en la pantalla de Cosmerito, y un aviso por Telegram si el buzón deja de dar señales
 - [ ] Cosmerito comprueba cada poco que el panel está en línea
 
 ## Fase 4 — Segundo producto

@@ -1,7 +1,7 @@
 # Conectar el buzón (v3) al panel: los pasos en n8n
 
-Lo que hay que hacer en `Sulaire/n8n_Facturas_Picasso` para que el buzón
-mande sus avisos al panel. **Aún no está hecho**: ese repo y el servidor de
+Lo que hay que hacer en el repo del buzón de facturas (en Cosmerito, el
+proyecto `facturas-picasso`) para que el buzón mande sus avisos al panel. **Aún no está hecho**: ese repo y el servidor de
 n8n no se han tocado. Esto es la receta para hacerlo (Jordi, o una sesión de
 Claude en ese repo siguiendo su `CLAUDE.md`).
 
@@ -14,7 +14,7 @@ cambia, que sea aquí, y se vuelve a copiar.
 
 - [ ] **Un código neutro por negocio.** Columna nueva `codigo_panel` en la
       hoja `Negocios` (lo ideal, el número de cliente que usa la gestoría,
-      p. ej. `017`). `id_negocio` no vale: es el nombre (`BARPICASSO`). Sin
+      p. ej. `017`). `id_negocio` no vale: es el nombre del negocio en mayúsculas. Sin
       `codigo_panel`, el código no manda nada.
 - [ ] En el panel, `/admin`: dar de alta a la gestoría, añadirle el buzón y
       crear su llave.

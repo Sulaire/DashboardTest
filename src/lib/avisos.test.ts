@@ -19,7 +19,7 @@ test("el producto tiene que ser el de la llave", () => {
 });
 
 test("el código es corto, nunca un nombre", () => {
-  assert.ok("error" in limpiarAviso({ ...base, cliente: "Bar Picasso S.L." }, buzon));
+  assert.ok("error" in limpiarAviso({ ...base, cliente: "Bar Ejemplo S.L." }, buzon));
   // Un número se toma como código (n8n a veces los manda así).
   const r = limpiarAviso({ ...base, cliente: 17 }, buzon);
   assert.ok("aviso" in r && r.aviso.codigo === "17");
@@ -72,7 +72,7 @@ test("un código no puede ser un DNI, NIE, CIF ni teléfono", () => {
     assert.ok("error" in limpiarAviso({ ...base, cliente }, buzon), cliente);
   for (const cliente of ["017", "C-023", "cliente_7", "BAR01"]) assert.ok("aviso" in limpiarAviso({ ...base, cliente }, buzon), cliente);
   // Sin ninguna cifra, es un nombre (como el id_negocio de la v3).
-  for (const cliente of ["BARPICASSO", "ana.garcia"]) assert.ok("error" in limpiarAviso({ ...base, cliente }, buzon), cliente);
+  for (const cliente of ["BARDEEJEMPLO", "ana.garcia"]) assert.ok("error" in limpiarAviso({ ...base, cliente }, buzon), cliente);
 });
 
 test("las cifras heredadas de los objetos de JavaScript no cuelan", () => {
