@@ -68,6 +68,49 @@ export async function listarClientes(): Promise<ClienteAdmin[]> {
   }));
 }
 
+/**
+ * Da de baja a un cliente y borra todo lo suyo: productos, llaves, avisos y
+ * las cuentas de sus personas (si no tienen acceso a otro cliente). Es lo que
+ * pide el contrato de encargo al terminar el servicio. No se puede deshacer.
+ */
+export async function borrarCliente(clienteId: string, correoAdmin: string | undefined): Promise<void> {
+  const pool = await poolDueno();
+  const conexion = await pool.connect();
+  try {
+    await conexion.query("begin");
+    const personas = (
+      await conexion.query<{ usuario_id: string }>("select usuario_id from miembros where cliente_id = $1", [clienteId])
+    ).rows.map((f) => f.usuario_id);
+    await conexion.query("delete from clientes where id = $1", [clienteId]);
+    if (personas.length)
+      await conexion.query(
+        `delete from "user" u where u.id = any($1)
+           and not exists (select 1 from miembros m where m.usuario_id = u.id)
+           and u.email is distinct from $2`,
+        [personas, correoAdmin ?? null],
+      );
+    await conexion.query("commit");
+  } catch (e) {
+    await conexion.query("rollback").catch(() => {});
+    throw e;
+  } finally {
+    conexion.release();
+  }
+}
+
+export type AvisoAdmin = { codigo: string | null; ok: boolean; texto: string; cifras: Record<string, number>; recibido_en: Date };
+
+/** Los últimos avisos de un producto contratado, para comprobar que n8n manda bien. */
+export async function ultimosAvisos(contratacionId: string, cuantos = 10): Promise<AvisoAdmin[]> {
+  const pool = await poolDueno();
+  return (
+    await pool.query<AvisoAdmin>(
+      "select codigo, ok, texto, cifras, recibido_en from avisos where contratacion_id = $1 order by recibido_en desc limit $2",
+      [contratacionId, cuantos],
+    )
+  ).rows;
+}
+
 export async function crearCliente(nombre: string): Promise<string> {
   const limpio = nombre.trim().slice(0, 80);
   if (!limpio) throw new Error("El cliente necesita un nombre.");
@@ -92,11 +135,19 @@ export async function anadirPersona(clienteId: string, correo: string): Promise<
   await pool.query("insert into miembros (usuario_id, cliente_id) values ($1, $2) on conflict do nothing", [id, clienteId]);
 }
 
-/** Quita el acceso a una persona y cierra sus sesiones abiertas. */
-export async function quitarPersona(clienteId: string, usuarioId: string): Promise<void> {
+/**
+ * Quita el acceso a una persona. Si ya no puede ver ningún cliente, se borra
+ * su cuenta (y con ella sus sesiones abiertas): no hay por qué guardar su correo.
+ */
+export async function quitarPersona(clienteId: string, usuarioId: string, correoAdmin: string | undefined): Promise<void> {
   const pool = await poolDueno();
   await pool.query("delete from miembros where usuario_id = $1 and cliente_id = $2", [usuarioId, clienteId]);
-  await pool.query(`delete from "session" where "userId" = $1`, [usuarioId]);
+  await pool.query(
+    `delete from "user" u where u.id = $1
+       and not exists (select 1 from miembros m where m.usuario_id = u.id)
+       and u.email is distinct from $2`,
+    [usuarioId, correoAdmin ?? null],
+  );
 }
 
 export async function contratar(clienteId: string, productoId: string): Promise<void> {

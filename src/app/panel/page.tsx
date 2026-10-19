@@ -27,6 +27,7 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
     if (!UUID.test(q.cliente)) notFound();
     clienteId = q.cliente;
   }
+  if (!clienteId && yo.esAdmin) redirect("/admin");
   if (!clienteId)
     return (
       <>

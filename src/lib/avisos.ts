@@ -24,7 +24,14 @@ const PROHIBIDO: [RegExp, string][] = [
   [/(?:\d[\s.-]?){9,}/, "tiene un número largo (teléfono, cuenta…)"],
   [/\b\d{8}[A-Za-z]\b|\b[XYZxyz]\d{7}[A-Za-z]\b/, "parece un DNI o NIE"],
   [/€|\$|£|\d\s*(?:eur|euros?)\b/i, "parece un importe"],
+  [/\d,\d{2}\b/, "parece un importe (un número con céntimos)"],
 ];
+
+/**
+ * Las fechas y horas no son datos personales, pero sus cifras seguidas
+ * («2026-10-03 12:00») parecerían un teléfono: se quitan antes de mirar.
+ */
+const FECHAS = /\b\d{4}-\d{1,2}-\d{1,2}\b|\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b|\b\d{1,2}:\d{2}(?::\d{2})?\b/g;
 
 export function limpiarAviso(
   cuerpo: Record<string, unknown>,
@@ -47,8 +54,9 @@ export function limpiarAviso(
   const texto = cuerpo.texto.replace(/\s+/g, " ").trim();
   if (!texto) return { error: "'texto' no puede ir vacío." };
   if (texto.length > TEXTO_MAXIMO) return { error: `'texto' como mucho ${TEXTO_MAXIMO} caracteres.` };
+  const sinFechas = texto.replace(FECHAS, " ");
   for (const [patron, motivo] of PROHIBIDO)
-    if (patron.test(texto)) return { error: `'texto' ${motivo}: aquí no van datos personales ni importes.` };
+    if (patron.test(sinFechas)) return { error: `'texto' ${motivo}: aquí no van datos personales ni importes.` };
 
   const cifras: Record<string, number> = {};
   if (cuerpo.cifras !== undefined && cuerpo.cifras !== null) {

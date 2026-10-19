@@ -35,8 +35,14 @@ test("rechaza datos personales e importes en el texto", () => {
     "Total 120 euros",
   ])
     assert.ok("error" in limpiarAviso({ ...base, texto }, buzon), texto);
+  assert.ok("error" in limpiarAviso({ ...base, texto: "Total 120,50" }, buzon));
   assert.ok("error" in limpiarAviso({ ...base, texto: "x".repeat(161) }, buzon));
   assert.ok("error" in limpiarAviso({ ...base, texto: "   " }, buzon));
+});
+
+test("las fechas y horas no se confunden con teléfonos", () => {
+  for (const texto of ["Envío del 2026-10-03 09:00 hecho", "Pasada del 03/10/2026 a las 09:00:15", "Última factura el 3.10.26"])
+    assert.ok("aviso" in limpiarAviso({ ...base, texto }, buzon), texto);
 });
 
 test("las cifras son recuentos declarados por el producto", () => {

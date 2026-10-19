@@ -2,20 +2,29 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Cabecera } from "@/componentes/Cabecera";
-import { listarClientes } from "@/lib/admin";
+import { listarClientes, ultimosAvisos } from "@/lib/admin";
 import { fechaYHora } from "@/lib/calculos";
-import { faltan } from "@/lib/config";
+import { config, faltan } from "@/lib/config";
 import { cargarProductos } from "@/lib/productos/cargar";
 import { borrarAvisosViejos } from "@/lib/retencion";
 import { quienSoy } from "@/lib/sesion";
-import { anadirPersona, anularLlaves, cambiarActiva, contratar, crearCliente, elegirBloques, quitarPersona } from "./acciones";
+import {
+  anadirPersona,
+  anularLlaves,
+  borrarCliente,
+  cambiarActiva,
+  contratar,
+  crearCliente,
+  elegirBloques,
+  quitarPersona,
+} from "./acciones";
 import { BotonLlave } from "./boton-llave";
 
 const boton = "rounded-lg bg-superficie-2 px-3 py-1.5 text-sm";
 const campo = "rounded-lg border border-borde bg-superficie px-3 py-1.5";
 
 /** El panel de administrador: dar de alta clientes, personas, productos y llaves. Solo Jordi. */
-export default async function Admin() {
+export default async function Admin({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   await connection(); // se decide en cada visita (sesión, configuración), nunca al compilar
   if (faltan().length) redirect("/");
   const yo = await quienSoy();
@@ -25,11 +34,22 @@ export default async function Admin() {
   await borrarAvisosViejos();
   const { productos, errores } = cargarProductos();
   const clientes = await listarClientes();
+  const recientes = new Map(
+    await Promise.all(
+      clientes.flatMap((c) => c.contrataciones).map(async (x) => [x.id, await ultimosAvisos(x.id)] as const),
+    ),
+  );
+  const { error } = await searchParams;
 
   return (
     <>
       <Cabecera cliente="Administración" />
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+        {error === "confirmacion" && (
+          <p role="alert" className="rounded-xl bg-rojo-fondo p-4 text-rojo">
+            No se ha borrado nada: el nombre escrito no coincide con el del cliente.
+          </p>
+        )}
         {errores.length > 0 && (
           <section role="alert" className="rounded-xl bg-rojo-fondo p-4 text-rojo">
             <h2 className="font-semibold">Productos con errores (no se pueden usar)</h2>
@@ -107,7 +127,7 @@ export default async function Admin() {
                         Llave: {x.llaveViva ? "puesta" : "sin llave"}
                       </p>
                       <div className="flex flex-wrap items-start gap-3">
-                        <BotonLlave contratacion={x.id} hayLlave={x.llaveViva} />
+                        <BotonLlave contratacion={x.id} hayLlave={x.llaveViva} direccion={`${config.url ?? ""}/api/avisos`} />
                         {x.llaveViva && (
                           <form action={anularLlaves}>
                             <input type="hidden" name="contratacion" value={x.id} />
@@ -115,6 +135,27 @@ export default async function Admin() {
                           </form>
                         )}
                       </div>
+                      <details>
+                        <summary className="cursor-pointer text-sm">Últimos avisos recibidos</summary>
+                        {(recientes.get(x.id) ?? []).length === 0 ? (
+                          <p className="mt-2 text-sm text-texto-suave">Todavía ninguno.</p>
+                        ) : (
+                          <ul className="mt-2 space-y-1 text-sm">
+                            {(recientes.get(x.id) ?? []).map((a, i) => (
+                              <li key={i}>
+                                <span className={a.ok ? "text-verde" : "text-ambar"}>{a.ok ? "bien" : "revisar"}</span> ·{" "}
+                                {fechaYHora(a.recibido_en)} · {a.codigo ?? "sin código"} · {a.texto}
+                                {Object.keys(a.cifras).length > 0 && (
+                                  <span className="text-texto-suave">
+                                    {" "}
+                                    · {Object.entries(a.cifras).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </details>
                       {p && (
                         <form action={elegirBloques} className="space-y-2">
                           <input type="hidden" name="contratacion" value={x.id} />
@@ -149,6 +190,22 @@ export default async function Admin() {
                   </form>
                 )}
               </div>
+
+              <details className="rounded-lg border border-borde p-4">
+                <summary className="cursor-pointer text-sm text-rojo">Dar de baja y borrar todos sus datos</summary>
+                <form action={borrarCliente} className="mt-3 space-y-2">
+                  <p className="text-sm text-texto-suave">
+                    Se borran sus productos, llaves, avisos y las cuentas de sus personas. No se puede deshacer. Es lo que pide el
+                    contrato de encargo al terminar el servicio.
+                  </p>
+                  <input type="hidden" name="cliente" value={c.id} />
+                  <label className="flex flex-col gap-1 text-sm">
+                    Escribe «{c.nombre}» para confirmar
+                    <input name="confirmacion" required autoComplete="off" className={campo} />
+                  </label>
+                  <button className="rounded-lg bg-rojo px-3 py-1.5 text-sm text-sobre-acento">Borrar para siempre</button>
+                </form>
+              </details>
             </section>
           );
         })}

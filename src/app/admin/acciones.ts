@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import * as admin from "@/lib/admin";
+import { config } from "@/lib/config";
 import { quienSoy } from "@/lib/sesion";
 
 /**
@@ -30,7 +32,17 @@ export async function anadirPersona(datos: FormData) {
 
 export async function quitarPersona(datos: FormData) {
   await exigirAdmin();
-  await admin.quitarPersona(texto(datos, "cliente"), texto(datos, "usuario"));
+  await admin.quitarPersona(texto(datos, "cliente"), texto(datos, "usuario"), config.correoAdmin);
+  revalidatePath("/admin");
+}
+
+/** Borra el cliente entero; hay que escribir su nombre para confirmarlo. */
+export async function borrarCliente(datos: FormData) {
+  await exigirAdmin();
+  const cliente = (await admin.listarClientes()).find((c) => c.id === texto(datos, "cliente"));
+  if (!cliente) throw new Error("Ese cliente no existe.");
+  if (texto(datos, "confirmacion").trim() !== cliente.nombre) redirect("/admin?error=confirmacion");
+  await admin.borrarCliente(cliente.id, config.correoAdmin);
   revalidatePath("/admin");
 }
 

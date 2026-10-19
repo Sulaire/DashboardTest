@@ -116,8 +116,11 @@ test("personas: dar y quitar acceso", sin, async () => {
   const [persona] = (await admin.listarClientes()).find((c) => c.id === A)!.personas;
   assert.equal(persona.correo, "ana@gestoria.es");
   assert.deepEqual(await clientesDeUsuario(persona.id), [A]);
-  await admin.quitarPersona(A, persona.id);
+  await admin.quitarPersona(A, persona.id, "jordi@ejemplo.es");
   assert.deepEqual(await clientesDeUsuario(persona.id), []);
+  // Sin acceso a ningún cliente, su cuenta (y su correo) se borra.
+  const queda = (await (await poolDueno()).query(`select 1 from "user" where id = $1`, [persona.id])).rows;
+  assert.equal(queda.length, 0);
   await assert.rejects(admin.anadirPersona(A, "no-es-un-correo"));
 });
 
@@ -135,6 +138,38 @@ test("los avisos de más de 12 meses se borran", sin, async () => {
     [A, contratacionA],
   );
   assert.equal(await borrarAvisosViejos(), 1);
+});
+
+test("los últimos avisos de un producto, para el administrador", sin, async () => {
+  const avisos = await admin.ultimosAvisos(contratacionA);
+  assert.ok(avisos.length >= 1);
+  assert.ok(avisos.every((a, i) => i === 0 || avisos[i - 1].recibido_en >= a.recibido_en));
+});
+
+test("dar de baja un cliente borra todo lo suyo y nada de otro", sin, async () => {
+  const C = await admin.crearCliente("Gestoría C");
+  await admin.contratar(C, "buzon-facturas");
+  const [cc] = (await admin.listarClientes()).find((c) => c.id === C)!.contrataciones;
+  const llaveC = await admin.nuevaLlaveProducto(cc.id);
+  await guardarAviso((await destinoDeLlave(llaveC))!, { codigo: "1", ok: true, texto: "x", cifras: {} });
+  await admin.anadirPersona(C, "solo-de-c@ejemplo.es");
+  await admin.anadirPersona(C, "jordi@ejemplo.es"); // el admin nunca se borra
+  const antesB = (await comoCliente(B, (c) => c.query("select count(*)::int as n from avisos"))).rows[0].n;
+
+  await admin.borrarCliente(C, "jordi@ejemplo.es");
+
+  const pool = await poolDueno();
+  assert.equal((await pool.query("select 1 from clientes where id = $1", [C])).rows.length, 0);
+  assert.equal((await pool.query("select 1 from avisos where cliente_id = $1", [C])).rows.length, 0);
+  assert.equal((await pool.query("select 1 from llaves_producto where cliente_id = $1", [C])).rows.length, 0);
+  assert.equal(await destinoDeLlave(llaveC), null);
+  assert.equal((await pool.query(`select 1 from "user" where email = 'solo-de-c@ejemplo.es'`)).rows.length, 0);
+  assert.equal((await pool.query(`select 1 from "user" where email = 'jordi@ejemplo.es'`)).rows.length, 1);
+  assert.equal((await comoCliente(B, (c) => c.query("select count(*)::int as n from avisos"))).rows[0].n, antesB);
+});
+
+test("panel_app no puede crear nada en el esquema", sin, async () => {
+  await assert.rejects(consultaApp("create table plantada (x int)"), /permission denied/);
 });
 
 test("el administrador tiene cuenta desde el arranque", sin, async () => {
