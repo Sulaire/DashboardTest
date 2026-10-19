@@ -8,7 +8,7 @@ Nombre provisional (se cambia en `src/lib/marca.ts`).
 
 - El plan por fases: `ROADMAP.md`.
 - Cómo funciona por dentro (explicado para Jordi): `docs/COMO_FUNCIONA.md`. Si cambias la arquitectura, actualízalo.
-- Cómo mandan los productos sus avisos (para n8n): `docs/AVISOS.md`.
+- Cómo mandan los productos sus avisos (para n8n): `docs/AVISOS.md`. Los pasos para el buzón: `docs/N8N_BUZON.md`, con el código de sus nodos en `integraciones/n8n/aviso_panel.js` (probado contra el filtro del panel en `src/lib/integracion-n8n.test.ts`).
 - Cómo se describe un producto: `docs/PRODUCTOS.md`.
 - Protección de datos y lo que va en el contrato de encargo: `docs/PROTECCION_DE_DATOS.md`.
 - Cómo se publica en Railway: `docs/DESPLIEGUE.md`.

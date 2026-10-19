@@ -30,6 +30,7 @@ el porqué de cada decisión, está en Cosmerito (`docs/propuestas/dashboard-cli
 
 ## Fase 2 — El buzón de verdad
 
+- [x] Preparada la conexión del buzón con el panel, lista para ponerla en marcha
 - [ ] El buzón de facturas manda sus avisos al panel
 - [ ] Dar de alta a la gestoría, con sus clientes por código
 - [ ] Una semana con datos reales, revisada con la gestoría

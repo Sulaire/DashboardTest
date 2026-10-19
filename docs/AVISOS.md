@@ -70,7 +70,12 @@ aviso fue bueno»: cada pasada manda **cuántas quedan por revisar ahora**
 | Envío a la gestoría (06, el día 3 de cada mes) | `cliente: codigo_panel`, `ok: true`, `texto: "Envío mensual a la gestoría hecho"`, `cifras: { "enviadas": 6 }` |
 | Notificador de errores (02) | sin `cliente`, `ok: false`, `texto: "El buzón ha tenido un error y se está revisando"` |
 | Canario (03), si cae una credencial | sin `cliente`, `ok: false`, `texto: "El buzón no puede leer el correo ahora mismo: se está arreglando"` |
-| Canario (03), cuando vuelve a ir bien | sin `cliente`, `ok: true`, `texto: "El buzón vuelve a leer el correo"` (cierra el aviso anterior) |
+
+Un problema sin `cliente` (de todo el buzón) lo cierra cualquier aviso bueno
+posterior: si la siguiente pasada archiva bien, es que ya funciona.
+
+El código exacto para los nodos de n8n, con pruebas, está en
+`integraciones/n8n/aviso_panel.js`, y los pasos en `docs/N8N_BUZON.md`.
 
 Aunque una pasada no archive nada, conviene mandar el aviso de la Ingesta
 con `facturas: 0`: así el panel sabe que el buzón sigue vivo (si pasa

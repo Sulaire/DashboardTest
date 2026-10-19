@@ -75,19 +75,32 @@ function abierto(ultimo: Aviso, pendientes: number | undefined): boolean {
 }
 
 /**
+ * Un problema sin código (de todo el producto: un error del flujo, una
+ * credencial caída) se cierra con cualquier aviso bueno posterior, tenga
+ * código o no: si el buzón vuelve a archivar, es que ya funciona.
+ */
+function generalAbierto(avisos: Aviso[]): boolean {
+  const general = ordenados(avisos).find((a) => a.codigo === null);
+  if (!general || general.ok) return false;
+  return !avisos.some((a) => a.ok && a.recibido_en > general.recibido_en);
+}
+
+/**
  * - gris: nunca ha llegado nada;
  * - rojo: nada en las últimas `silencioHoras` (el producto se ha callado);
- * - ámbar: algún código tiene algo abierto: su último aviso es ok: false (el
- *   siguiente ok lo cierra, como en el monitor de Cosmerito) o, si el producto
- *   declara `abiertos`, le queda algo pendiente (se apaga cuando llega a 0);
+ * - ámbar: algo abierto: el último aviso de algún código es ok: false (el
+ *   siguiente ok de ese código lo cierra, como en el monitor de Cosmerito); si
+ *   el producto declara `abiertos`, a algún código le queda algo pendiente (se
+ *   apaga cuando llega a 0); o un problema sin código que nada ha cerrado aún;
  * - verde: lo demás.
  */
 export function semaforo(avisos: Aviso[], silencioHoras: number, ahora: Date, abiertos?: string): Color {
   if (avisos.length === 0) return "gris";
   const ultimo = ordenados(avisos)[0];
   if (ahora.getTime() - ultimo.recibido_en.getTime() > silencioHoras * 3_600_000) return "rojo";
+  if (generalAbierto(avisos)) return "ambar";
   const pendientes = abiertos ? ultimoValor(avisos, abiertos) : new Map<string, number>();
-  for (const [codigo, a] of ultimoPorCodigo(avisos)) if (abierto(a, pendientes.get(codigo))) return "ambar";
+  for (const [codigo, a] of ultimoPorCodigo(avisos)) if (codigo !== "" && abierto(a, pendientes.get(codigo))) return "ambar";
   return "verde";
 }
 

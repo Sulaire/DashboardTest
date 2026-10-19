@@ -94,6 +94,10 @@ bloques (`src/componentes/Bloques.tsx`) valen para cualquier producto:
 | lista | un renglón por código: Revisar / Bien / Sin movimiento (30 días sin nada) |
 | avisos | los últimos problemas (`ok: false`) |
 
+Un problema sin código (de todo el producto: un error del flujo, una
+credencial caída) lo cierra cualquier aviso bueno posterior, con código o sin
+él.
+
 Un código tiene algo «abierto» si su último aviso es `ok: false` (lo cierra el
 siguiente `ok: true`, igual que el monitor por cliente de Cosmerito) o si el
 producto declara una cifra `abiertos` y su último valor es mayor que 0. En el

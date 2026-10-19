@@ -33,6 +33,15 @@ test("semáforo con «abiertos»: un ok no apaga el ámbar mientras quede algo p
   assert.equal(semaforo([aviso("5", true, 2, { pendientes: 0 }), aviso(null, false, 1)], 48, ahora, "pendientes"), "ambar");
 });
 
+test("un problema sin código lo cierra cualquier aviso bueno posterior", () => {
+  const error = aviso(null, false, 3);
+  assert.equal(semaforo([aviso("1", true, 5), error], 48, ahora), "ambar");
+  assert.equal(semaforo([error, aviso("1", true, 1)], 48, ahora), "verde");
+  assert.equal(semaforo([error, aviso(null, true, 1)], 48, ahora), "verde");
+  // Uno malo con código no cierra el general.
+  assert.equal(semaforo([error, aviso("1", false, 1)], 48, ahora), "ambar");
+});
+
 test("cifras «actual»: el último valor de cada código, sumado", () => {
   const avisos = [aviso("1", true, 5, { pendientes: 4 }), aviso("1", true, 1, { pendientes: 1 }), aviso("2", true, 2, { pendientes: 2 }), aviso("3", true, 1)];
   assert.equal(valorDe({ etiqueta: "", calculo: "actual", cifra: "pendientes" }, avisos, ahora), "3");
