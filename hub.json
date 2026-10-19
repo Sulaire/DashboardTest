@@ -8,6 +8,10 @@
   "tipo": "producto",
   "estado": "activo",
   "fase": "Fase 1 — Lo mínimo que se puede enseñar",
+  "cliente": {
+    "negocio": "Gestoría (primer cliente del buzón)",
+    "sigilo": true
+  },
   "repo": {
     "github": "Sulaire/DashboardTest",
     "rama_de_trabajo": "claude/new-session-f28w15"
@@ -27,5 +31,5 @@
   "progreso": {
     "archivo": "ROADMAP.md"
   },
-  "actualizado": "2026-10-15"
+  "actualizado": "2026-10-19"
 }

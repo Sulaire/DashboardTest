@@ -20,16 +20,18 @@ export function avisosDeDemo(ahora: Date): Aviso[] {
         codigo,
         ok: true,
         texto: `${facturas} ${facturas === 1 ? "factura archivada" : "facturas archivadas"}`,
-        cifras: { facturas },
+        cifras: { facturas, pendientes: 0 },
         recibido_en: hace(d, 2 + (i % 6)),
       });
     }
   });
 
-  // Un problema abierto: el último aviso del 023 es un PDF que no se puede leer.
-  avisos.push({ codigo: "023", ok: false, texto: "Una factura llegó en un PDF ilegible: revísala en el Drive", cifras: { problemas: 1 }, recibido_en: hace(0, 1) });
-  // Uno ya resuelto: el 007 tuvo un remitente desconocido, y después llegó bien.
-  avisos.push({ codigo: "007", ok: false, texto: "Factura de un remitente desconocido: falta darlo de alta", cifras: { problemas: 1 }, recibido_en: hace(4, 1) });
+  // Un problema abierto: al 023 le llegó un PDF que no se puede leer, y en la
+  // pasada siguiente, aunque archivó bien otras dos, sigue quedando una por revisar.
+  avisos.push({ codigo: "023", ok: false, texto: "Una factura llegó en un PDF sin texto: hay que mirarla a mano", cifras: {}, recibido_en: hace(0, 3) });
+  avisos.push({ codigo: "023", ok: true, texto: "2 facturas archivadas", cifras: { facturas: 2, pendientes: 1 }, recibido_en: hace(0, 1) });
+  // Uno ya resuelto: el 007 tuvo un proveedor nuevo; se dio de alta y su cola quedó a 0.
+  avisos.push({ codigo: "007", ok: false, texto: "Factura de un proveedor nuevo: falta darle el visto bueno", cifras: {}, recibido_en: hace(4, 1) });
   // El envío mensual a la gestoría (sin código: es de todo el buzón).
   const dia = Number(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", day: "numeric" }).format(ahora));
   const desdeElDia3 = dia >= 3 ? dia - 3 : dia + 27;

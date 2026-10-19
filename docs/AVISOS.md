@@ -36,35 +36,70 @@ cuerpo no vale; `401` si la llave no vale o está anulada.
 
 ## Qué mandar desde el buzón (v3)
 
-Las cifras del buzón: `facturas`, `problemas`, `enviadas`.
+Sacado de leer la v3 (`Sulaire/n8n_Facturas_Picasso`, rama
+`claude/awesome-planck-rbxg9a`, el 17-10-2026). Las cifras del buzón son
+`facturas`, `pendientes` y `enviadas`. El código (`cliente`) es el
+`id_negocio` de la hoja `Negocios`.
+
+### La idea: un recuento de lo que queda, no avisos sueltos
+
+En la v3, una factura que va a `Revision` sigue ahí hasta que alguien la mira,
+aunque después se archiven otras. Por eso el panel no se fía de «el último
+aviso fue bueno»: cada pasada manda **cuántas quedan por revisar ahora**
+(`pendientes`). Mientras un código tenga `pendientes` mayor que 0, sale en
+ámbar; cuando baja a 0, se apaga solo. Es la cifra `abiertos` de
+`productos/buzon-facturas.json`.
+
+`pendientes` se cuenta igual que lo hace ya el Resumen Semanal (07,
+`v3/nodos/resumen_semanal.js`): filas de `Revision` de ese negocio con
+`estado = pendiente` y cuyo motivo **no** es un descarte (tabla de abajo).
 
 | Cuándo (workflow) | Aviso |
 |---|---|
-| Ingesta (04), al acabar con un negocio | `cliente: id_negocio`, `ok: true`, `texto: "3 facturas archivadas"`, `cifras: { "facturas": 3 }` |
-| Ingesta (04), algo va a la hoja Revision | `cliente: id_negocio`, `ok: false`, `texto` según el motivo (abajo), `cifras: { "problemas": 1 }` |
-| Envío a la gestoría (06) | `cliente: id_negocio`, `ok: true`, `texto: "Envío mensual a la gestoría hecho"`, `cifras: { "enviadas": 47 }` |
+| Ingesta (04), al acabar cada pasada de un negocio (junto a `Resumen` → `Avisar Telegram`) | `cliente: id_negocio`, `ok: true`, `texto: "3 facturas archivadas"`, `cifras: { "facturas": 3, "pendientes": 1 }` |
+| Ingesta (04), por cada fila **nueva** de `Revision` que no sea un descarte | `cliente: id_negocio`, `ok: false`, `texto` según el motivo (abajo), sin cifras |
+| Envío a la gestoría (06, el día 3 de cada mes) | `cliente: id_negocio`, `ok: true`, `texto: "Envío mensual a la gestoría hecho"`, `cifras: { "enviadas": 6 }` |
 | Notificador de errores (02) | sin `cliente`, `ok: false`, `texto: "El buzón ha tenido un error y se está revisando"` |
+| Canario (03), si cae una credencial | sin `cliente`, `ok: false`, `texto: "El buzón no puede leer el correo ahora mismo: se está arreglando"` |
+| Canario (03), cuando vuelve a ir bien | sin `cliente`, `ok: true`, `texto: "El buzón vuelve a leer el correo"` (cierra el aviso anterior) |
 
-Textos para los motivos de la hoja Revision (sin nombres ni importes):
+Aunque una pasada no archive nada, conviene mandar el aviso de la Ingesta
+con `facturas: 0`: así el panel sabe que el buzón sigue vivo (si pasa
+`silencio_horas` sin noticias, el semáforo se pone rojo).
 
-| Motivo | Texto |
+### Motivos que esperan a alguien (cuentan en `pendientes`)
+
+Textos para el aviso `ok: false`. Sin nombres de personas ni importes; el
+nombre de una empresa proveedora se puede poner, pero no hace falta.
+
+| Motivo en `Revision` | Texto |
 |---|---|
-| `remitente_desconocido` | Factura de un remitente que aún no está dado de alta |
-| `sin_adjunto` | Llegó un correo de factura sin adjunto |
-| `no_pdf` | Llegó una factura que no es PDF |
-| `pdf_ilegible` | Una factura llegó en un PDF ilegible: revísala en el Drive |
-| `sin_cif` | Una factura no trae CIF del emisor |
-| `suministro_no_coincide` | Una factura de suministro no es de este local |
-| `datos_incompletos` | A una factura le faltan datos |
+| `sin_adjunto` | Llegó un correo de factura sin el PDF adjunto |
+| `pdf_sin_texto_necesita_ocr`, `pdf_texto_insuficiente`, `imagen_necesita_vision_ia` | Una factura llegó en un PDF sin texto: hay que mirarla a mano |
+| `sin_cif_emisor`, `sin_cif_ni_con_ia` | Una factura no trae el CIF de quien la emite |
+| `proveedor_desconocido`, `proveedor_nuevo_dado_de_alta_revisalo` | Factura de un proveedor nuevo: falta darle el visto bueno |
+| `proveedor_inactivo_activalo_en_la_hoja` | Factura de un proveedor que está desactivado: actívalo si es del negocio |
+| `sin_fecha`, `sin_fecha_ni_con_ia` | A una factura no se le encuentra la fecha |
+| `albaran_sin_numero` | Un albarán no trae número |
+| `importes_no_cuadran_necesita_ia`, `ia_no_cuadra_revisar_a_mano`, `ia_importes_no_estan_escritos_en_el_pdf`, `ia_tipo_de_iva_imposible` | Los importes de una factura no cuadran: hay que revisarla |
 
-Ojo: un problema de un código se da por cerrado cuando llega un `ok: true` de
-ese código. Si la ingesta manda un `ok: true` cada vez que archiva algo, el
-aviso deja de salir en ámbar, pero sigue en el bloque «Avisos».
+### Descartes: no se avisan ni cuentan
+
+Quedan en `Revision` como rastro, no como tarea (el Resumen Semanal tampoco
+los cuenta): `probable_firma`, `adjunto_no_pdf`, `extracto_bancario`,
+`otro_suministro_no_es_del_negocio`, `albaran` y `ia_dice_que_no_es_factura`.
+Si se avisaran, el semáforo estaría siempre en ámbar y se dejaría de mirar.
+
+### Lo que no se manda nunca
+
+Ni importes, ni números de factura, ni CIF, ni nombres de los negocios o de
+sus clientes, ni asuntos de correo, ni enlaces a Drive. El panel rechaza
+importes y datos personales, pero lo primero es no mandarlos.
 
 ## Probar a mano
 
 ```bash
 curl -s -X POST "$PANEL_URL/api/avisos" \
   -H "Authorization: Bearer $LLAVE" -H "Content-Type: application/json" \
-  -d '{"producto":"buzon-facturas","cliente":"017","ok":true,"texto":"1 factura archivada","cifras":{"facturas":1}}'
+  -d '{"producto":"buzon-facturas","cliente":"017","ok":true,"texto":"1 factura archivada","cifras":{"facturas":1,"pendientes":0}}'
 ```

@@ -16,6 +16,7 @@ pruebas).
 | `codigos` | Cómo se llaman los códigos en pantalla («Cliente», «Local»…). |
 | `silencio_horas` | Horas sin avisos a partir de las que el semáforo se pone rojo. |
 | `cifras` | Las cifras que puede mandar, con su nombre. Cualquier otra se rechaza. |
+| `abiertos` | Opcional. La cifra que cuenta lo que espera a alguien ahora (en el buzón, `pendientes`). No se suma: vale el último valor de cada código. Mayor que 0 = ese código en ámbar, aunque el último aviso fuera bueno. |
 | `bloques` | Lo que enseña la pestaña, en orden. Cada uno con `id` (para elegirlo a la carta), `tipo` y `titulo`. |
 
 Bloques:
@@ -24,8 +25,9 @@ Bloques:
 - `cifras`: `elementos`, cada uno con `etiqueta` y `calculo`:
   - `suma_mes` + `cifra`: la suma de este mes.
   - `ultima_fecha` + `cifra`: la fecha del último aviso que la trae.
+  - `actual` + `cifra`: lo que vale ahora (el último valor de cada código, sumado). Para recuentos como «por revisar».
   - `codigos_activos` + `dias`: cuántos códigos mandaron algo en esos días.
-- `lista`: un renglón por código; con `cifra`, su suma del mes.
+- `lista`: un renglón por código; con `cifra`, su suma del mes. Si el producto tiene `abiertos`, el «Revisar» lleva cuántos le quedan.
 - `avisos`: los últimos problemas; `maximo` entre 1 y 100.
 
 Si un producto necesita algo que ningún bloque sabe enseñar, se hace un bloque

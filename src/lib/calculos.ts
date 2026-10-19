@@ -48,17 +48,38 @@ export function ultimoPorCodigo(avisos: Aviso[]): Map<string, Aviso> {
 }
 
 /**
+ * El último valor que mandó cada código de una cifra «de ahora» (no se suma):
+ * p. ej. cuántas facturas le quedan por revisar. Los códigos que nunca la
+ * mandaron no salen.
+ */
+export function ultimoValor(avisos: Aviso[], cifra: string): Map<string, number> {
+  const valores = new Map<string, number>();
+  for (const a of ordenados(avisos)) {
+    const clave = a.codigo ?? "";
+    if (!valores.has(clave) && cifra in a.cifras) valores.set(clave, a.cifras[cifra]);
+  }
+  return valores;
+}
+
+/** Si un código tiene algo abierto: su último aviso fue malo, o le queda algo por hacer (la cifra `abiertos`). */
+function abierto(ultimo: Aviso, pendientes: number | undefined): boolean {
+  return !ultimo.ok || (pendientes ?? 0) > 0;
+}
+
+/**
  * - gris: nunca ha llegado nada;
  * - rojo: nada en las últimas `silencioHoras` (el producto se ha callado);
- * - ámbar: algún código tiene un problema abierto (su último aviso es ok: false;
- *   el siguiente ok lo cierra, como en el monitor de Cosmerito);
+ * - ámbar: algún código tiene algo abierto: su último aviso es ok: false (el
+ *   siguiente ok lo cierra, como en el monitor de Cosmerito) o, si el producto
+ *   declara `abiertos`, le queda algo pendiente (se apaga cuando llega a 0);
  * - verde: lo demás.
  */
-export function semaforo(avisos: Aviso[], silencioHoras: number, ahora: Date): Color {
+export function semaforo(avisos: Aviso[], silencioHoras: number, ahora: Date, abiertos?: string): Color {
   if (avisos.length === 0) return "gris";
   const ultimo = ordenados(avisos)[0];
   if (ahora.getTime() - ultimo.recibido_en.getTime() > silencioHoras * 3_600_000) return "rojo";
-  for (const a of ultimoPorCodigo(avisos).values()) if (!a.ok) return "ambar";
+  const pendientes = abiertos ? ultimoValor(avisos, abiertos) : new Map<string, number>();
+  for (const [codigo, a] of ultimoPorCodigo(avisos)) if (abierto(a, pendientes.get(codigo))) return "ambar";
   return "verde";
 }
 
@@ -68,6 +89,11 @@ export function valorDe(elemento: Elemento, avisos: Aviso[], ahora: Date): strin
     const mes = mesDe(ahora);
     let suma = 0;
     for (const a of avisos) if (mesDe(a.recibido_en) === mes) suma += a.cifras[elemento.cifra] ?? 0;
+    return formatoNumero.format(suma);
+  }
+  if (elemento.calculo === "actual") {
+    let suma = 0;
+    for (const v of ultimoValor(avisos, elemento.cifra).values()) suma += v;
     return formatoNumero.format(suma);
   }
   if (elemento.calculo === "ultima_fecha") {
@@ -82,13 +108,21 @@ export function valorDe(elemento: Elemento, avisos: Aviso[], ahora: Date): strin
 /** Un código sin ningún aviso en estos días sale como «Sin movimiento» en la lista. */
 export const DIAS_SIN_MOVIMIENTO = 30;
 
-export type Fila = { codigo: string; estado: "bien" | "revisar" | "quieto"; ultimo: Date; delMes: number | null };
+export type Fila = {
+  codigo: string;
+  estado: "bien" | "revisar" | "quieto";
+  ultimo: Date;
+  delMes: number | null;
+  /** Lo que le queda pendiente (la cifra `abiertos`), si el producto la tiene y el código la mandó. */
+  pendientes: number | null;
+};
 
 const ORDEN_FILA = { revisar: 0, bien: 1, quieto: 2 };
 
 /** Un renglón por código: los que tienen un problema abierto, primero; los quietos, al final. */
-export function filas(avisos: Aviso[], cifra: string | undefined, ahora: Date): Fila[] {
+export function filas(avisos: Aviso[], cifra: string | undefined, ahora: Date, abiertos?: string): Fila[] {
   const mes = mesDe(ahora);
+  const pendientes = abiertos ? ultimoValor(avisos, abiertos) : new Map<string, number>();
   const sumas = new Map<string, number>();
   if (cifra)
     for (const a of avisos)
@@ -97,9 +131,14 @@ export function filas(avisos: Aviso[], cifra: string | undefined, ahora: Date): 
     .filter(([codigo]) => codigo !== "")
     .map(([codigo, a]): Fila => ({
       codigo,
-      estado: !a.ok ? "revisar" : ahora.getTime() - a.recibido_en.getTime() > DIAS_SIN_MOVIMIENTO * 86_400_000 ? "quieto" : "bien",
+      estado: abierto(a, pendientes.get(codigo))
+        ? "revisar"
+        : ahora.getTime() - a.recibido_en.getTime() > DIAS_SIN_MOVIMIENTO * 86_400_000
+          ? "quieto"
+          : "bien",
       ultimo: a.recibido_en,
       delMes: cifra ? (sumas.get(codigo) ?? 0) : null,
+      pendientes: pendientes.get(codigo) ?? null,
     }))
     .sort((x, y) => ORDEN_FILA[x.estado] - ORDEN_FILA[y.estado] || x.codigo.localeCompare(y.codigo, "es", { numeric: true }));
 }

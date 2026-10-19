@@ -29,6 +29,7 @@ export function validarProducto(dato: unknown): { producto: Producto } | { error
     if (!esTexto(nombre)) e.push(`La cifra '${clave}' necesita un nombre.`);
   }
   const conocida = (c: unknown) => typeof c === "string" && !!cifras && c in cifras;
+  if (p.abiertos !== undefined && !conocida(p.abiertos)) e.push(`'abiertos' tiene que ser una de las 'cifras'.`);
   if (!Array.isArray(p.bloques) || p.bloques.length === 0) e.push("Faltan 'bloques'.");
   else {
     const ids = new Set<string>();
@@ -48,11 +49,11 @@ export function validarProducto(dato: unknown): { producto: Producto } | { error
         if (!Array.isArray(b.elementos) || b.elementos.length === 0) e.push(`${quien}: faltan 'elementos'.`);
         else for (const el of b.elementos) {
           if (!esTexto(el.etiqueta)) e.push(`${quien}: un elemento sin 'etiqueta'.`);
-          if (el.calculo === "suma_mes" || el.calculo === "ultima_fecha") {
+          if (el.calculo === "suma_mes" || el.calculo === "ultima_fecha" || el.calculo === "actual") {
             if (!conocida(el.cifra)) e.push(`${quien}: la cifra '${el.cifra}' no está en 'cifras'.`);
           } else if (el.calculo === "codigos_activos") {
             if (!(typeof el.dias === "number" && el.dias > 0)) e.push(`${quien}: 'dias' tiene que ser mayor que 0.`);
-          } else e.push(`${quien}: cálculo desconocido (suma_mes, ultima_fecha, codigos_activos).`);
+          } else e.push(`${quien}: cálculo desconocido (suma_mes, ultima_fecha, actual, codigos_activos).`);
         }
       }
       if (b.tipo === "lista" && b.cifra !== undefined && !conocida(b.cifra)) e.push(`${quien}: la cifra '${b.cifra}' no está en 'cifras'.`);

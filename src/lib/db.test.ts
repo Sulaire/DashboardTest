@@ -58,7 +58,7 @@ test("la llave decide el cliente, y cada aviso va al suyo", sin, async () => {
   assert.equal(dB?.clienteId, B);
   assert.equal(await destinoDeLlave("dcp_inventada"), null);
   await guardarAviso(dA!, { codigo: "017", ok: true, texto: "3 facturas archivadas", cifras: { facturas: 3 } });
-  await guardarAviso(dB!, { codigo: "099", ok: false, texto: "PDF ilegible", cifras: { problemas: 1 } });
+  await guardarAviso(dB!, { codigo: "099", ok: false, texto: "PDF ilegible", cifras: { pendientes: 1 } });
   const deA = await avisosDe(A, contratacionA);
   assert.deepEqual(deA.map((a) => a.codigo), ["017"]);
 });

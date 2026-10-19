@@ -19,6 +19,7 @@ test("una descripción con errores se explica", () => {
     codigos: "c",
     silencio_horas: 1,
     cifras: { a: "A" },
+    abiertos: "z",
     bloques: [
       { id: "c", tipo: "cifras", titulo: "t", elementos: [{ etiqueta: "e", calculo: "suma_mes", cifra: "b" }] },
       { id: "c", tipo: "grafica", titulo: "t" },
@@ -27,6 +28,7 @@ test("una descripción con errores se explica", () => {
   assert.ok("errores" in r);
   assert.match(r.errores.join(" "), /'b' no está en 'cifras'/);
   assert.match(r.errores.join(" "), /id repetido/);
+  assert.match(r.errores.join(" "), /'abiertos'/);
 });
 
 test("un archivo roto no tumba el resto", () => {

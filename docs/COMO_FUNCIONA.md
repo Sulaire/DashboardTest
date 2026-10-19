@@ -88,13 +88,17 @@ bloques (`src/componentes/Bloques.tsx`) valen para cualquier producto:
 
 | Bloque | Qué enseña |
 |---|---|
-| semáforo | gris: nunca llegó nada · rojo: lleva más de `silencio_horas` callado · ámbar: algún código tiene un problema abierto · verde: lo demás |
-| cifras | sumas del mes (hora de Madrid), la fecha del último aviso que trae una cifra, códigos activos |
+| semáforo | gris: nunca llegó nada · rojo: lleva más de `silencio_horas` callado · ámbar: algún código tiene algo abierto · verde: lo demás |
+| cifras | sumas del mes (hora de Madrid), lo que vale ahora una cifra (`actual`), la fecha del último aviso que trae una cifra, códigos activos |
 | lista | un renglón por código: Revisar / Bien / Sin movimiento (30 días sin nada) |
 | avisos | los últimos problemas (`ok: false`) |
 
-Un problema de un código queda «abierto» hasta que llega un `ok: true` de ese
-mismo código, igual que el monitor por cliente de Cosmerito.
+Un código tiene algo «abierto» si su último aviso es `ok: false` (lo cierra el
+siguiente `ok: true`, igual que el monitor por cliente de Cosmerito) o si el
+producto declara una cifra `abiertos` y su último valor es mayor que 0. En el
+buzón es `pendientes`: las facturas que esperan a que alguien las mire. Hace
+falta porque en la v3 una factura en `Revision` sigue pendiente aunque después
+se archiven otras: un «ok» de la siguiente pasada no la resuelve.
 
 Los cálculos están en `src/lib/calculos.ts`, sin base de datos, y la demo
 (`/demo`) usa los mismos con datos inventados (`src/lib/demo.ts`).

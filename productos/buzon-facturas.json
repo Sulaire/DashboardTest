@@ -4,9 +4,10 @@
   "descripcion": "Las facturas que llegan al correo de cada cliente de la gestoría se archivan solas en su Drive y se envían a la gestoría.",
   "codigos": "Cliente",
   "silencio_horas": 48,
+  "abiertos": "pendientes",
   "cifras": {
     "facturas": "Facturas archivadas",
-    "problemas": "Facturas con problema",
+    "pendientes": "Facturas por revisar",
     "enviadas": "Facturas enviadas a la gestoría"
   },
   "bloques": [
@@ -26,10 +27,26 @@
       "tipo": "cifras",
       "titulo": "Este mes",
       "elementos": [
-        { "etiqueta": "Archivadas este mes", "calculo": "suma_mes", "cifra": "facturas" },
-        { "etiqueta": "Con problema", "calculo": "suma_mes", "cifra": "problemas" },
-        { "etiqueta": "Último envío a la gestoría", "calculo": "ultima_fecha", "cifra": "enviadas" },
-        { "etiqueta": "Clientes activos (30 días)", "calculo": "codigos_activos", "dias": 30 }
+        {
+          "etiqueta": "Archivadas este mes",
+          "calculo": "suma_mes",
+          "cifra": "facturas"
+        },
+        {
+          "etiqueta": "Por revisar ahora",
+          "calculo": "actual",
+          "cifra": "pendientes"
+        },
+        {
+          "etiqueta": "Último envío a la gestoría",
+          "calculo": "ultima_fecha",
+          "cifra": "enviadas"
+        },
+        {
+          "etiqueta": "Clientes activos (30 días)",
+          "calculo": "codigos_activos",
+          "dias": 30
+        }
       ]
     },
     {

@@ -41,6 +41,7 @@ test("rechaza datos personales e importes en el texto", () => {
 
 test("las cifras son recuentos declarados por el producto", () => {
   assert.ok("error" in limpiarAviso({ ...base, cifras: { importe_total: 1200 } }, buzon));
+  assert.ok("aviso" in limpiarAviso({ ...base, cifras: { facturas: 3, pendientes: 0 } }, buzon));
   assert.ok("error" in limpiarAviso({ ...base, cifras: { facturas: 12.5 } }, buzon));
   assert.ok("error" in limpiarAviso({ ...base, cifras: { facturas: -1 } }, buzon));
   assert.ok("error" in limpiarAviso({ ...base, cifras: [1] }, buzon));

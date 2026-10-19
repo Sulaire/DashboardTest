@@ -19,6 +19,7 @@ el porqué de cada decisión, está en Cosmerito (`docs/propuestas/dashboard-cli
 - [x] Cada cliente ve solo lo suyo, y la base de datos lo garantiza
 - [x] El buzón puede contar lo que hace: facturas archivadas, problemas y envíos
 - [x] El semáforo, las cifras del mes, la lista de clientes y los avisos
+- [x] El semáforo sigue en ámbar mientras queden facturas por revisar, y se apaga solo cuando no queda ninguna
 - [x] Cada cliente elige qué bloques quiere ver
 - [x] Panel de administración para dar de alta clientes, personas y productos
 - [x] Lo que llega se borra solo a los 12 meses

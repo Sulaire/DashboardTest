@@ -34,7 +34,7 @@ function Punto({ color }: { color: Color }) {
 }
 
 function Semaforo({ bloque, producto, avisos, ahora }: Props & { bloque: Extract<Bloque, { tipo: "semaforo" }> }) {
-  const color = semaforo(avisos, producto.silencio_horas, ahora);
+  const color = semaforo(avisos, producto.silencio_horas, ahora, producto.abiertos);
   const e = ESTILO[color];
   return (
     <section className={`flex items-center gap-4 rounded-xl border border-borde p-5 ${e.fondo}`}>
@@ -66,7 +66,7 @@ function Cifras({ bloque, avisos, ahora }: Props & { bloque: Extract<Bloque, { t
 }
 
 function Lista({ bloque, producto, avisos, ahora }: Props & { bloque: Extract<Bloque, { tipo: "lista" }> }) {
-  const renglones = filas(avisos, bloque.cifra, ahora);
+  const renglones = filas(avisos, bloque.cifra, ahora, producto.abiertos);
   if (renglones.length === 0)
     return (
       <Caja titulo={bloque.titulo}>
@@ -93,6 +93,7 @@ function Lista({ bloque, producto, avisos, ahora }: Props & { bloque: Extract<Bl
                   <span className="inline-flex items-center gap-2">
                     <Punto color={ESTADO_FILA[f.estado].color} />
                     {ESTADO_FILA[f.estado].texto}
+                    {f.estado === "revisar" && !!f.pendientes && ` (${f.pendientes})`}
                   </span>
                 </td>
                 {bloque.cifra && <td className="py-2 pr-4 text-right tabular-nums">{f.delMes}</td>}
