@@ -4,6 +4,7 @@ import pg from "pg";
 import * as admin from "@/lib/admin";
 import { avisosDe, clientesDeUsuario, destinoDeLlave, guardarAviso, nombreCliente, pestanas } from "@/lib/datos";
 import { cerrarDb, comoCliente, consultaApp, poolApp, poolDueno } from "@/lib/db";
+import { producto } from "@/lib/productos/cargar";
 import { borrarAvisosViejos } from "@/lib/retencion";
 import { resumenDeTodos } from "@/lib/resumen-datos";
 
@@ -128,7 +129,7 @@ test("personas: dar y quitar acceso", sin, async () => {
 test("a la carta: se guardan solo bloques que existen; todos = null", sin, async () => {
   await admin.elegirBloques(contratacionA, ["avisos", "inventado"]);
   assert.deepEqual((await pestanas(A))[0].bloques, ["avisos"]);
-  await admin.elegirBloques(contratacionA, ["estado", "cifras-mes", "clientes", "avisos"]);
+  await admin.elegirBloques(contratacionA, producto("buzon-facturas")!.bloques.map((b) => b.id));
   assert.equal((await pestanas(A))[0].bloques, null);
 });
 
