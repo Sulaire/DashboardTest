@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { faltan } from "@/lib/config";
 import { MARCA } from "@/lib/marca";
 import { quienSoy } from "@/lib/sesion";
 import { FormularioEntrar } from "./formulario";
+
+export const metadata: Metadata = { title: "Entrar" };
 
 export default async function Entrar({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   await connection(); // se decide en cada visita (sesión, configuración), nunca al compilar

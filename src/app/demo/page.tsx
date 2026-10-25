@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Pestana } from "@/componentes/Bloques";
 import { Cabecera } from "@/componentes/Cabecera";
 import { avisosDeDemo } from "@/lib/demo";
 import { producto } from "@/lib/productos/cargar";
+
+export const metadata: Metadata = { title: "Demostración" };
 
 /**
  * La demo: la pestaña del buzón con datos inventados, para enseñarla a la

@@ -7,6 +7,12 @@
  *
  * Claro por defecto (lo mira una gestoría en horario de oficina); oscuro si
  * el sistema lo pide. Verde, ámbar y rojo se reservan para el semáforo.
+ *
+ * Contraste (comprobado en los dos temas, ver docs/REVISIONES.md): todo color
+ * de texto llega a 4,5:1 sobre los fondos donde se usa; `--borde-campo` llega
+ * a 3:1 sobre `--fondo`, `--superficie` y `--superficie-2`, porque es lo que
+ * deja ver dónde está una casilla o un botón. `--borde` es solo adorno (separa
+ * cajas) y por eso puede ser suave.
  */
 :root {
   color-scheme: light;
@@ -14,11 +20,12 @@
   --superficie: #ffffff;
   --superficie-2: #eef0f4;
   --borde: #dde1e8;
+  --borde-campo: #808898;
   --texto: #161a22;
   --texto-suave: #4a5262;
   --acento: #3550c8;
   --sobre-acento: #ffffff;
-  --verde: #17804f;
+  --verde: #147548;
   --verde-fondo: #e3f4ea;
   --ambar: #8f5b00;
   --ambar-fondo: #fdf0d6;
@@ -37,6 +44,7 @@
     --superficie: #171b22;
     --superficie-2: #20252e;
     --borde: #2c323d;
+    --borde-campo: #6a7385;
     --texto: #e9ecf1;
     --texto-suave: #aab2c0;
     --acento: #8fa2ff;
@@ -58,6 +66,7 @@
   --color-superficie: var(--superficie);
   --color-superficie-2: var(--superficie-2);
   --color-borde: var(--borde);
+  --color-borde-campo: var(--borde-campo);
   --color-texto: var(--texto);
   --color-texto-suave: var(--texto-suave);
   --color-acento: var(--acento);
@@ -77,9 +86,39 @@ body {
   background: var(--fondo);
   color: var(--texto);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Las casillas de marcar (los bloques en /admin), del color de la marca y no del azul del navegador. */
+  accent-color: var(--acento);
+}
+
+/*
+ * El texto de ejemplo de los campos (el gris que se ve antes de escribir,
+ * «correo@ejemplo.es»). Tailwind lo pinta con el color del
+ * texto a medio transparentar, que se queda en 3,4:1 (no se lee bien). Con
+ * el gris de los textos secundarios llega a 7:1 y sigue viéndose más suave
+ * que lo que escribes.
+ */
+::placeholder {
+  color: var(--texto-suave);
+  opacity: 1;
 }
 
 :focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
+}
+
+/*
+ * Modo de alto contraste de Windows: el navegador quita los fondos y pinta todo
+ * con los colores de la persona. Las columnas de la gráfica son fondos, así que
+ * desaparecerían; las pintamos con el color del texto que haya elegido.
+ */
+@media (forced-colors: active) {
+  .bg-grafica {
+    forced-color-adjust: none;
+    background-color: CanvasText;
+  }
+  /* La pestaña elegida se distingue por su fondo, que aquí no se ve: la subrayamos. */
+  [aria-current="page"] {
+    text-decoration: underline;
+  }
 }

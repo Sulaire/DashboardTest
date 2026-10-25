@@ -10,18 +10,22 @@ export function Cabecera({ cliente, conSalir = true, admin = false }: { cliente?
           <p className="font-semibold">{MARCA.nombre}</p>
           {cliente && <p className="text-sm text-texto-suave">{cliente}</p>}
         </div>
-        <nav className="flex items-center gap-4 text-sm">
-          {admin && (
-            <Link href="/admin" className="text-acento underline-offset-4 hover:underline">
-              Administración
-            </Link>
-          )}
-          {conSalir && (
-            <form action={salir}>
-              <button className="text-texto-suave underline-offset-4 hover:underline">Salir</button>
-            </form>
-          )}
-        </nav>
+        {/* Solo si hay algo dentro: en la demo no hay nada, y un «menú» vacío
+            confunde a quien navega con lector de pantalla. */}
+        {(admin || conSalir) && (
+          <nav aria-label="Cuenta" className="flex items-center gap-4 text-sm">
+            {admin && (
+              <Link href="/admin" className="text-acento underline-offset-4 hover:underline">
+                Administración
+              </Link>
+            )}
+            {conSalir && (
+              <form action={salir}>
+                <button className="text-texto-suave underline-offset-4 hover:underline">Salir</button>
+              </form>
+            )}
+          </nav>
+        )}
       </div>
     </header>
   );

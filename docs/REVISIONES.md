@@ -40,3 +40,56 @@ del buzón, que salía en pruebas y documentos, se cambió por nombres de
 ejemplo. Los commits antiguos todavía lo llevan: si importa, lo sencillo es
 hacer el repo privado (GitHub → Settings → General → Danger Zone → Change
 visibility). Lo decide Jordi.
+
+## Repaso de accesibilidad (25-10-2026)
+
+Hecho mirando las páginas de verdad (con un navegador manejado por programa)
+contra el commit `fc60c13`: `/demo`, `/entrar` (también con el enlace
+caducado), `/panel` (como cliente y como administrador, en verde, ámbar, rojo,
+gris y sin productos), `/admin`, la página de «no existe» y la de «falta
+configurar». Cada una a 1280 y 390 px de ancho (las tablas, también a 320), en
+claro y en oscuro, con [axe-core](https://github.com/dequelabs/axe-core) (el
+comprobador automático de accesibilidad más usado, reglas WCAG 2.2 AA), y a
+mano: recorrido con el tabulador, foco visible, nombres para el lector de
+pantalla, orden de los títulos, contraste calculado de cada color de
+`globals.css` en los dos temas, desplazamiento lateral y nada dicho solo con
+color.
+
+axe, antes → después: `/admin` tenía 2 reglas rotas (contraste en 9 sitios y
+sin título principal) en claro y 1 en oscuro, a los dos anchos; `/admin` vacío,
+1. El resto (demo, entrar, 404, panel) ya salía a 0. Después, **0 en todas**
+(44 combinaciones de página, estado, ancho y tema, más la de «falta
+configurar» y la demo con el build de producción). axe no ve lo de la tabla de
+abajo que no es contraste: eso salió de mirar.
+
+| # | Qué pasaba | Qué se hizo |
+|---|---|---|
+| 1 | El verde del semáforo y del «bien» de `/admin` se quedaba en 4,34:1 sobre su fondo claro (hace falta 4,5:1 para leerse bien). | `--verde` claro un poco más oscuro (`#147548`): 5,02:1. El oscuro ya pasaba. |
+| 2 | Las casillas para escribir (correo, nombre) tenían un borde casi invisible (1,3:1): no se veía dónde escribir. Y en `/admin` los botones de cada producto eran del mismo gris que su caja: parecían texto. | Color nuevo `--borde-campo` (3,1:1 o más sobre los tres fondos, en los dos temas) para casillas y botones; los botones de `/admin` llevan ese borde y el fondo de la tarjeta, así se ven también dentro de la caja gris. |
+| 3 | El texto de ejemplo de las casillas («correo@ejemplo.es») salía al 50 % de transparencia: 3,4:1. | Se pinta con `--texto-suave` (7:1 o más), en `globals.css`. |
+| 4 | En el móvil, la etiqueta de la gráfica de la primera y la última semana se salía de la pantalla: «171» se leía «1». Y todas tapaban el título de la caja. | La etiqueta se alinea hacia dentro (izquierda en la mitad izquierda, derecha en la otra) y sale en una franja reservada encima de las columnas. Ya no desaparece si subes el ratón a ella. Comprobado columna a columna a 390 y 1280. |
+| 5 | En el modo de alto contraste de Windows las columnas de la gráfica desaparecían (son fondos, y ese modo los quita: negro sobre negro). | Se pintan con el color de texto que tenga elegido la persona. La pestaña de producto elegida, que también se distingue por su fondo, sale subrayada. |
+| 6 | `/admin` no tenía título principal (h1), y el panel sin productos y «tu cuenta aún no tiene panel», tampoco. | Títulos «Clientes», «Tu panel» y «Tu cuenta aún no tiene ningún panel». |
+| 7 | Todas las pestañas del navegador se llamaban igual, «Panel de clientes»: el lector de pantalla no dice dónde has llegado. | «Entrar · Panel de clientes», «Demostración · …», «Administración · …», «Página no encontrada · …». |
+| 8 | Al pedir el enlace en `/entrar`, el formulario desaparecía con el botón que tenía el foco: quien usa teclado o lector de pantalla se quedaba «en ninguna parte» y el mensaje podía no leerse. | El foco pasa al mensaje «Si ese correo tiene acceso…». La caja de la llave nueva de `/admin` vive en una zona de avisos que ya está puesta antes de pulsar, para que se lea. |
+| 9 | En la demo había un menú vacío en la cabecera (el lector lo anuncia y no hay nada). | El menú solo se pinta si tiene algo dentro, y se llama «Cuenta». |
+| 10 | En `/admin`, varios «Quitar» y «Ver su panel» iguales: fuera de contexto no se sabe de quién. | Llevan, solo para el lector, «el acceso de ana@…» y el nombre del cliente. |
+| 11 | La tabla de clientes, a 320 px, se desplaza de lado, pero con el teclado no se podía mover. La raya «—» de «Último envío» se lee «raya» o nada. La cabecera «(mes)» no decía qué mes. | La tabla es una zona con nombre a la que se llega con el tabulador (y se mueve con las flechas); el código de cada fila es su cabecera. La raya se lee «Sin datos todavía». «Facturas archivadas este mes». |
+
+Para que no vuelva a pasar, una prueba de guardia nueva calcula el contraste
+de los colores de `globals.css` en los dos temas (4,5:1 el texto, 3:1
+`--borde-campo` y la gráfica). Con el verde de antes, falla.
+
+Lo que se comprobó y está bien: un solo h1 y títulos en orden en cada página;
+`lang="es"`; todos los campos con nombre; el foco se ve siempre (contorno del
+color de acento, 6:1 o más); las columnas de la gráfica se alcanzan con el
+tabulador y enseñan su valor al enfocarlas, y todos los datos están además en
+la tabla de «Ver los datos»; los estados (semáforo y lista) se dicen con
+palabras, no solo con color; ningún desplazamiento lateral de la página a 390
+ni a 320 px; avisos de error con `role="alert"`.
+
+Queda (no es un fallo, pero conviene saberlo): cuando el buzón lleva más de
+48 horas callado, el semáforo sale en rojo («sin noticias») mientras las filas
+de sus clientes pueden seguir diciendo «Bien»: la lista mira cada código, no
+el silencio de todo el buzón. Es una decisión de cómo se cuenta, no de
+accesibilidad; si confunde a la gestoría, se puede cambiar.
