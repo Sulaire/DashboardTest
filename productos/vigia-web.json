@@ -1,0 +1,49 @@
+{
+  "id": "vigia-web",
+  "nombre": "Tu web",
+  "descripcion": "Comprobamos cada 15 minutos que tu web responde. Si se cae, lo verás aquí y lo estaremos mirando.",
+  "codigos": "Página",
+  "silencio_horas": 2,
+  "cifras": {
+    "comprobaciones": "Comprobaciones",
+    "caidas": "Caídas",
+    "ms": "Tiempo de respuesta (milisegundos)"
+  },
+  "bloques": [
+    {
+      "id": "estado",
+      "tipo": "semaforo",
+      "titulo": "Tu web",
+      "textos": {
+        "verde": "En línea: responde con normalidad.",
+        "ambar": "La última comprobación ha fallado: tu web puede estar caída y lo estamos mirando.",
+        "rojo": "El vigía no da señales: no sabemos si tu web está bien.",
+        "gris": "Aún no se ha hecho ninguna comprobación."
+      }
+    },
+    {
+      "id": "cifras-mes",
+      "tipo": "cifras",
+      "titulo": "Este mes",
+      "elementos": [
+        { "etiqueta": "Comprobaciones este mes", "calculo": "suma_mes", "cifra": "comprobaciones" },
+        { "etiqueta": "Caídas este mes", "calculo": "suma_mes", "cifra": "caidas" },
+        { "etiqueta": "Última caída", "calculo": "ultima_fecha", "cifra": "caidas" },
+        { "etiqueta": "Respuesta ahora (ms)", "calculo": "actual", "cifra": "ms" }
+      ]
+    },
+    {
+      "id": "semanas",
+      "tipo": "grafica",
+      "titulo": "Caídas por semana",
+      "cifra": "caidas",
+      "semanas": 8
+    },
+    {
+      "id": "avisos",
+      "tipo": "avisos",
+      "titulo": "Avisos",
+      "maximo": 10
+    }
+  ]
+}

@@ -1,0 +1,182 @@
+{
+  "name": "Vigía de web → Panel de clientes",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "name": "Cada 15 Minutos",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "v1",
+              "name": "web",
+              "value": "https://www.ejemplo.es",
+              "type": "string"
+            },
+            {
+              "id": "v2",
+              "name": "panel",
+              "value": "https://panel.ejemplo.es",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { inicio: Date.now() } }];"
+      },
+      "name": "Marcar Inicio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Config').first().json.web }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "name": "Pedir la Web",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===== Vigía de web: el aviso para el panel de clientes =====\n// El segundo producto del panel («Tu web», productos/vigia-web.json): cada 15\n// minutos se mira si la web de un cliente responde y se le cuenta al panel.\n// Es la prueba de que añadir un producto es conectar, no rehacer: un archivo\n// de descripción, una llave y esto. Nada del buzón se ha tocado.\n//\n// Va dentro de un nodo Code de n8n (vigia_web.n8n.json, que se genera desde\n// este archivo con `node integraciones/vigia-web/construir.mjs`). Escrito como\n// los nodos de n8n: `var` y funciones sueltas, todos los nombres con `vigia`.\n\n// Lo que ha pasado al pedir la web: si respondió bien (2xx o 3xx), con qué\n// código, y cuánto tardó. `respuesta` es la salida del nodo HTTP (con\n// «Full Response» y «Never Error»); si falló la red, trae `error`.\nfunction vigiaResultado(respuesta, inicioMs, finMs) {\n  var r = respuesta || {};\n  if (r.error) return { ok: false, estado: 0, ms: null };\n  var estado = Math.floor(Number(r.statusCode) || 0);\n  var ms = Math.max(0, Math.round(Number(finMs) - Number(inicioMs)));\n  return { ok: estado >= 200 && estado < 400, estado: estado, ms: isFinite(ms) ? ms : null };\n}\n\n// El aviso con el formato común. Sin código: es la web entera. Nunca la\n// dirección de la web ni nada del contenido de la página.\nfunction vigiaAviso(resultado) {\n  var r = resultado || {};\n  if (r.ok) {\n    var cifras = { comprobaciones: 1 };\n    if (r.ms !== null && r.ms !== undefined) cifras.ms = Math.min(r.ms, 600000);\n    return { producto: 'vigia-web', ok: true, texto: 'Tu web responde', cifras: cifras };\n  }\n  var texto = r.estado ? 'Tu web responde con un error (' + r.estado + ')' : 'Tu web no responde';\n  return { producto: 'vigia-web', ok: false, texto: texto, cifras: { comprobaciones: 1, caidas: 1 } };\n}\n\n// Para las pruebas del panel (en n8n `module` no existe y esto no hace nada).\nif (typeof module !== 'undefined' && module.exports) {\n  module.exports = { vigiaResultado: vigiaResultado, vigiaAviso: vigiaAviso };\n}\n\n// Cuerpo de «Preparar Aviso» (va detrás de aviso_vigia.js, en el mismo nodo).\nvar inicioVigia = $('Marcar Inicio').first().json.inicio;\nvar respuestaVigia = $input.first().json || {};\nreturn [{ json: vigiaAviso(vigiaResultado(respuestaVigia, inicioVigia, Date.now())) }];\n"
+      },
+      "name": "Preparar Aviso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').first().json.panel }}/api/avisos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "name": "Mandar al Panel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Cada 15 Minutos": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Marcar Inicio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Inicio": {
+      "main": [
+        [
+          {
+            "node": "Pedir la Web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedir la Web": {
+      "main": [
+        [
+          {
+            "node": "Preparar Aviso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Aviso": {
+      "main": [
+        [
+          {
+            "node": "Mandar al Panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid"
+  }
+}

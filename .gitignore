@@ -5,3 +5,5 @@ next-env.d.ts
 *.tsbuildinfo
 .env*
 !.env.example
+# Copias de trabajo de los agentes (no son parte del repo)
+.claude/worktrees/

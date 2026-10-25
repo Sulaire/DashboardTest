@@ -4,7 +4,9 @@ Cada producto es un archivo `productos/<id>.json`. Añadir un producto es
 escribir su archivo y crear su llave en `/admin`: no se toca nada de lo que ya
 funciona. El buzón vendido a 50 gestorías es una sola descripción.
 
-Ejemplo completo: `productos/buzon-facturas.json`. Los tipos exactos están en
+Ejemplos completos: `productos/buzon-facturas.json` (con códigos, pendientes
+y lista) y `productos/vigia-web.json` (sin códigos: un aviso por comprobación,
+`docs/VIGIA_WEB.md`). Los tipos exactos están en
 `src/lib/productos/tipos.ts`, y `src/lib/productos/cargar.ts` lo comprueba (un
 archivo con errores se queda fuera y sus errores salen en `/admin` y en las
 pruebas).

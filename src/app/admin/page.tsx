@@ -19,6 +19,7 @@ import {
   quitarPersona,
 } from "./acciones";
 import { BotonLlave } from "./boton-llave";
+import { Probador } from "./probador";
 
 const boton = "rounded-lg bg-superficie-2 px-3 py-1.5 text-sm";
 const campo = "rounded-lg border border-borde bg-superficie px-3 py-1.5";
@@ -214,6 +215,15 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
             </section>
           );
         })}
+
+        <details className="rounded-xl border border-borde bg-superficie p-5">
+          <summary className="cursor-pointer font-semibold">Probar un aviso (no se guarda)</summary>
+          <p className="mb-3 mt-2 text-sm text-texto-suave">
+            Pasa el aviso por el mismo filtro que /api/avisos y te dice si lo aceptaría o por qué no. Para montar un flujo de
+            n8n sin ensuciar los datos de ningún cliente.
+          </p>
+          <Probador productos={[...productos.values()].map((p) => ({ id: p.id, nombre: p.nombre }))} />
+        </details>
       </main>
     </>
   );

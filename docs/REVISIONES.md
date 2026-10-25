@@ -40,3 +40,13 @@ del buzón, que salía en pruebas y documentos, se cambió por nombres de
 ejemplo. Los commits antiguos todavía lo llevan: si importa, lo sencillo es
 hacer el repo privado (GitHub → Settings → General → Danger Zone → Change
 visibility). Lo decide Jordi.
+
+## `npm run dev` se recarga en bucle (25-10-2026)
+
+La página se recargaba sin parar en modo desarrollo («Compiled in 3ms» tras
+cada visita). La primera vez (15-10) se achacó a la CSP y se dejó solo en
+producción; volvió a pasar sin ella. La causa de verdad: haber hecho
+`npm run build` antes de `npm run dev`. Los dos usan la carpeta `.next`, y
+lo que deja el build confunde a la recarga en caliente. Probado: con `.next`
+borrado, la misma página carga una vez y se queda quieta. Apuntado en
+`CLAUDE.md` («Arrancar en tu ordenador»).

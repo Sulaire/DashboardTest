@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { fechaDeLunes, filas, mesDe, porSemana, problemas, semaforo, valorDe, type Aviso } from "@/lib/calculos";
-import { avisosDeDemo } from "@/lib/demo";
+import { avisosDeDemo, avisosVigiaDemo } from "@/lib/demo";
 
 const ahora = new Date("2026-10-15T10:00:00Z");
 const hace = (horas: number) => new Date(ahora.getTime() - horas * 3_600_000);
@@ -138,4 +138,10 @@ test("la demo tiene de todo: un problema abierto, un cliente callado y el envío
   assert.equal(valorDe({ etiqueta: "", calculo: "actual", cifra: "pendientes" }, avisos, ahora), "1");
   assert.equal(valorDe({ etiqueta: "", calculo: "codigos_activos", dias: 30 }, avisos, ahora), "11");
   assert.notEqual(valorDe({ etiqueta: "", calculo: "ultima_fecha", cifra: "enviadas" }, avisos, ahora), "—");
+});
+
+test("la demo de «Tu web»: en línea ahora, con sus dos caídas en el historial", () => {
+  const avisos = avisosVigiaDemo(ahora);
+  assert.equal(semaforo(avisos, 2, ahora), "verde");
+  assert.equal(avisos.filter((a) => !a.ok).length, 3);
 });

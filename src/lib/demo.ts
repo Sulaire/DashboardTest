@@ -39,3 +39,23 @@ export function avisosDeDemo(ahora: Date): Aviso[] {
 
   return avisos;
 }
+
+/**
+ * Datos de prueba del vigía de web («Tu web»): una comprobación por hora
+ * durante 62 días (en la vida real, cada 15 minutos), con dos caídas cortas.
+ * Siempre los mismos, contados hacia atrás desde `ahora`.
+ */
+export function avisosVigiaDemo(ahora: Date): Aviso[] {
+  const avisos: Aviso[] = [];
+  const caidas = new Set([16 * 24 + 3, 16 * 24 + 4, 38 * 24 + 10]); // horas atrás en que la web no respondió
+  for (let h = 0; h < 62 * 24; h++) {
+    const recibido_en = new Date(ahora.getTime() - h * 3_600_000 - 7 * 60_000);
+    if (caidas.has(h)) {
+      avisos.push({ codigo: null, ok: false, texto: "Tu web no responde", cifras: { comprobaciones: 1, caidas: 1 }, recibido_en });
+    } else {
+      const ms = 180 + ((h * 37) % 240);
+      avisos.push({ codigo: null, ok: true, texto: "Tu web responde", cifras: { comprobaciones: 1, ms }, recibido_en });
+    }
+  }
+  return avisos;
+}

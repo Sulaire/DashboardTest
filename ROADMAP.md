@@ -22,6 +22,7 @@ el porqué de cada decisión, está en Cosmerito (`docs/propuestas/dashboard-cli
 - [x] El semáforo sigue en ámbar mientras queden facturas por revisar, y se apaga solo cuando no queda ninguna
 - [x] Cada cliente elige qué bloques quiere ver
 - [x] Panel de administración para dar de alta clientes, personas y productos
+- [x] Un probador para comprobar un aviso antes de conectar un producto
 - [x] Lo que llega se borra solo a los 12 meses
 - [x] Dar de baja a un cliente borra todos sus datos de una vez
 - [ ] Publicar la aplicación en internet, con su dirección
@@ -43,7 +44,8 @@ el porqué de cada decisión, está en Cosmerito (`docs/propuestas/dashboard-cli
 
 ## Fase 4 — Segundo producto
 
-- [ ] Conectar un segundo producto (una web, un chatbot…) sin tocar el buzón
+- [x] Un segundo producto, «Tu web»: vigila que la web de un cliente esté en línea, sin tocar el buzón
+- [ ] Ponerlo en marcha para un cliente de verdad
 
 ## Fase 5 — Más adelante
 

@@ -9,7 +9,7 @@ Nombre provisional (se cambia en `src/lib/marca.ts`).
 - El plan por fases: `ROADMAP.md`.
 - Cómo funciona por dentro (explicado para Jordi): `docs/COMO_FUNCIONA.md`. Si cambias la arquitectura, actualízalo.
 - Cómo mandan los productos sus avisos (para n8n): `docs/AVISOS.md`. Los pasos para el buzón: `docs/N8N_BUZON.md`, con el código de sus nodos en `integraciones/n8n/aviso_panel.js` (probado contra el filtro del panel en `src/lib/integracion-n8n.test.ts`).
-- Cómo se describe un producto: `docs/PRODUCTOS.md`.
+- Cómo se describe un producto: `docs/PRODUCTOS.md`. El segundo producto, «Tu web» (vigía de la web de un cliente, con su flujo de n8n): `docs/VIGIA_WEB.md`.
 - Protección de datos y lo que va en el contrato de encargo: `docs/PROTECCION_DE_DATOS.md`.
 - Cómo se publica en Railway: `docs/DESPLIEGUE.md`.
 - Cómo lo vigila Cosmerito (salud y resumen por cliente): `docs/COSMERITO.md`.
@@ -41,7 +41,11 @@ cp .env.example .env.local   # y rellena DATABASE_URL, PANEL_DB_PASSWORD, BETTER
 npm run dev                  # http://localhost:3000 — sin Resend, el enlace para entrar sale en la terminal
 ```
 
-`/demo` enseña el buzón con datos inventados y no necesita nada.
+`/demo` enseña el buzón y «Tu web» con datos inventados y no necesita nada.
+
+Si `npm run dev` recarga la página en bucle, para el servidor, borra la carpeta
+`.next` y arráncalo otra vez: pasa cuando antes se ha hecho `npm run build`
+(los dos usan `.next` y lo del build confunde al modo desarrollo).
 
 ## Seguridad (no romper)
 
