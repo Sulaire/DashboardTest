@@ -192,8 +192,15 @@ function Lista({ bloque, producto, avisos, ahora, historial }: Props & { bloque:
         <p className="text-texto-suave">Aún no hay nada que enseñar.</p>
       </Caja>
     );
+  // Si el producto se ha callado, los estados de la lista son los de su último aviso: se dice.
+  const callado = semaforo(avisos, producto.silencio_horas, ahora, producto.abiertos, historial) === "rojo";
   return (
     <Caja titulo={bloque.titulo}>
+      {callado && (
+        <p className="mb-3 rounded-lg bg-rojo-fondo px-3 py-2 text-sm text-rojo">
+          Hace tiempo que no llegan noticias: estos estados son los del último aviso y pueden no estar al día.
+        </p>
+      )}
       {/* En pantallas muy estrechas (320 px) la tabla se desplaza de lado: con
           tabIndex se puede mover también con las flechas del teclado. */}
       <div className="overflow-x-auto" role="region" aria-label={bloque.titulo} tabIndex={0}>

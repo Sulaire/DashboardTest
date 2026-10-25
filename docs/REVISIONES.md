@@ -134,3 +134,6 @@ Queda (no es un fallo, pero conviene saberlo): cuando el buzón lleva más de
 de sus clientes pueden seguir diciendo «Bien»: la lista mira cada código, no
 el silencio de todo el buzón. Es una decisión de cómo se cuenta, no de
 accesibilidad; si confunde a la gestoría, se puede cambiar.
+**Arreglado el mismo día:** cuando el producto está en rojo, encima de la
+lista sale «Hace tiempo que no llegan noticias: estos estados son los del
+último aviso y pueden no estar al día».
