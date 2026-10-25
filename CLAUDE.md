@@ -30,7 +30,7 @@ correspondiente en `node_modules/next/dist/docs/`.
 
 - Páginas en `src/app/`, API en `src/app/api/`, lógica en `src/lib/`, bloques en `src/componentes/`.
 - Los productos se describen en `productos/<id>.json`; los bloques que valen para todos están en `src/componentes/Bloques.tsx` y sus cálculos (puros, con pruebas) en `src/lib/calculos.ts`.
-- Los estilos salen de los tokens de `src/app/globals.css`: nada de colores sueltos.
+- Los estilos salen de los tokens de `src/app/globals.css`: nada de colores sueltos. Si cambias un color, que se siga leyendo en los dos temas: 4,5:1 el texto, 3:1 los bordes de casillas y botones (`--borde-campo`) y la gráfica (lo comprueba una guardia).
 - Sin configuración, la app arranca y explica qué falta (`faltan()` en `src/lib/config.ts`). Mantén eso.
 
 ### Arrancar en tu ordenador
@@ -84,7 +84,7 @@ otro) y el resumen para Cosmerito. `E2E_DATABASE_URL=postgres://… npm run e2e`
 Las pruebas de guardia (`src/lib/guardias.test.ts`) vigilan las reglas de
 arriba leyendo el código: reglas por filas en cada tabla de cliente, `SET
 LOCAL`, quién usa la conexión del dueño, las acciones de admin, las rutas de la
-API, la demo y los colores. Si una falla, no la apagues: cumple la regla (o, si
+API, la demo, los colores y su contraste. Si una falla, no la apagues: cumple la regla (o, si
 la regla cambia, cámbiala aquí y en la guardia a la vez).
 
 ## Cosmerito: `hub.json` y `ROADMAP.md`

@@ -122,7 +122,7 @@ function panelContarVueltas(leer) {
   var n = 0;
   for (var r = 0; r < 100000; r++) {
     var items;
-    try { items = leer(r); } catch (e) { break; }
+    try { items = leer(r); } catch { break; }
     if (!items || !items.length) break;
     n += items.length;
   }

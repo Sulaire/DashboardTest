@@ -33,7 +33,8 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
       <>
         <Cabecera admin={yo.esAdmin} />
         <main className="mx-auto max-w-5xl px-4 py-10">
-          <p>Tu cuenta aún no tiene ningún panel. Si crees que es un error, escribe a Jordi.</p>
+          <h1 className="mb-2 text-2xl font-semibold">Tu cuenta aún no tiene ningún panel</h1>
+          <p className="text-texto-suave">Si crees que es un error, escribe a Jordi.</p>
         </main>
       </>
     );
@@ -61,7 +62,10 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
           </p>
         )}
         {!actual ? (
-          <p>Aún no hay ningún producto activo en este panel.</p>
+          <>
+            <h1 className="mb-2 text-2xl font-semibold">Tu panel</h1>
+            <p className="text-texto-suave">Aún no hay ningún producto activo en este panel.</p>
+          </>
         ) : (
           <>
             <Pestanas lista={conocidas.map((t) => ({ id: t.p.id, nombre: t.p.nombre }))} actual={actual.p.id} base={base} />

@@ -69,12 +69,25 @@ function Cifras({ bloque, avisos, ahora }: Props & { bloque: Extract<Bloque, { t
   return (
     <Caja titulo={bloque.titulo}>
       <dl className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {bloque.elementos.map((el) => (
-          <div key={el.etiqueta} className="rounded-lg bg-superficie-2 p-4">
-            <dt className="text-sm text-texto-suave">{el.etiqueta}</dt>
-            <dd className="mt-1 text-3xl font-semibold tabular-nums">{valorDe(el, avisos, ahora)}</dd>
-          </div>
-        ))}
+        {bloque.elementos.map((el) => {
+          const valor = valorDe(el, avisos, ahora);
+          return (
+            <div key={el.etiqueta} className="rounded-lg bg-superficie-2 p-4">
+              <dt className="text-sm text-texto-suave">{el.etiqueta}</dt>
+              <dd className="mt-1 text-3xl font-semibold tabular-nums">
+                {/* La raya se ve, pero el lector de pantalla la diría «raya» o se la saltaría: le damos palabras. */}
+                {valor === "—" ? (
+                  <>
+                    <span aria-hidden>—</span>
+                    <span className="sr-only">Sin datos todavía</span>
+                  </>
+                ) : (
+                  valor
+                )}
+              </dd>
+            </div>
+          );
+        })}
       </dl>
     </Caja>
   );
@@ -85,6 +98,12 @@ function Cifras({ bloque, avisos, ahora }: Props & { bloque: Extract<Bloque, { t
  * es. Columnas finas (24 px como mucho) con la punta redondeada, el valor
  * escrito solo en la semana de ahora y en la más alta, y el resto al pasar el
  * ratón o con el teclado; además, todos los datos en una tabla.
+ *
+ * La etiqueta con el valor sale en una franja reservada encima de las columnas
+ * (el `mt-8`: 32 px, que se juntan con el margen del título, no se suman), así
+ * no tapa el título ni otras columnas; en la mitad izquierda
+ * se alinea a la izquierda de su columna y en la derecha, a la derecha, para
+ * que en el móvil no se salga de la pantalla (antes, «171» se leía «1»).
  */
 function Grafica({ bloque, avisos, ahora }: Props & { bloque: Extract<Bloque, { tipo: "grafica" }> }) {
   const semanas = porSemana(avisos, bloque.cifra, bloque.semanas, ahora);
@@ -97,7 +116,7 @@ function Grafica({ bloque, avisos, ahora }: Props & { bloque: Extract<Bloque, { 
         <p className="text-texto-suave">Aún no hay datos para la gráfica.</p>
       ) : (
         <>
-          <div role="group" aria-label={bloque.titulo} className="flex h-40 items-end gap-0.5 border-b border-borde">
+          <div role="group" aria-label={bloque.titulo} className="mt-8 flex h-40 items-end gap-0.5 border-b border-borde">
             {semanas.map((x, i) => {
               const conValor = x.enCurso || i === iMax;
               return (
@@ -117,8 +136,14 @@ function Grafica({ bloque, avisos, ahora }: Props & { bloque: Extract<Bloque, { 
                     className="w-full max-w-6 rounded-t bg-grafica group-hover:brightness-110 group-focus:brightness-110"
                     style={{ height: `${(x.total / maximo) * 85}%` }}
                   />
-                  <div aria-hidden className="pointer-events-none absolute bottom-full z-10 mb-1 hidden whitespace-nowrap rounded-md border border-borde bg-superficie px-2 py-1 text-xs shadow group-hover:block group-focus:block">
-                    <strong className="tabular-nums">{x.total}</strong> <span className="text-texto-suave">· {nombre(x)}</span>
+                  {/* El hueco de abajo es relleno (pb-1) y no margen: así el ratón puede subir a la etiqueta sin que desaparezca. */}
+                  <div
+                    aria-hidden
+                    className={`absolute bottom-full z-10 hidden pb-1 group-hover:block group-focus:block ${i < semanas.length / 2 ? "left-0" : "right-0"}`}
+                  >
+                    <div className="whitespace-nowrap rounded-md border border-borde bg-superficie px-2 py-1 text-xs shadow">
+                      <strong className="tabular-nums">{x.total}</strong> <span className="text-texto-suave">· {nombre(x)}</span>
+                    </div>
                   </div>
                 </div>
               );
@@ -169,20 +194,25 @@ function Lista({ bloque, producto, avisos, ahora, historial }: Props & { bloque:
     );
   return (
     <Caja titulo={bloque.titulo}>
-      <div className="overflow-x-auto">
+      {/* En pantallas muy estrechas (320 px) la tabla se desplaza de lado: con
+          tabIndex se puede mover también con las flechas del teclado. */}
+      <div className="overflow-x-auto" role="region" aria-label={bloque.titulo} tabIndex={0}>
         <table className="w-full text-left text-sm">
           <thead className="text-texto-suave">
             <tr className="border-b border-borde">
               <th className="py-2 pr-4 font-medium">{producto.codigos}</th>
               <th className="py-2 pr-4 font-medium">Estado</th>
-              {bloque.cifra && <th className="py-2 pr-4 text-right font-medium">{producto.cifras[bloque.cifra]} (mes)</th>}
+              {bloque.cifra && <th className="py-2 pr-4 text-right font-medium">{producto.cifras[bloque.cifra]} este mes</th>}
               <th className="py-2 font-medium">Último aviso</th>
             </tr>
           </thead>
           <tbody>
             {renglones.slice(0, FILAS_MAXIMAS).map((f) => (
               <tr key={f.codigo} className="border-b border-borde last:border-0">
-                <td className="py-2 pr-4 font-mono font-medium">{f.codigo}</td>
+                {/* El código es la cabecera de su fila: el lector de pantalla lo dice al moverse por ella. */}
+                <th scope="row" className="py-2 pr-4 text-left font-mono font-medium">
+                  {f.codigo}
+                </th>
                 <td className="py-2 pr-4">
                   <span className="inline-flex items-center gap-2">
                     <Punto color={ESTADO_FILA[f.estado].color} />

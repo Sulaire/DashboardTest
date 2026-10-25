@@ -90,3 +90,48 @@ test("la demo no toca nada real", () => {
 test("nada de colores sueltos: solo los tokens de globals.css", () => {
   for (const a of codigo.filter((x) => x.endsWith(".tsx"))) assert.doesNotMatch(leer(a), /#[0-9a-f]{3,8}\b|rgb\(/i, a);
 });
+
+test("los colores se leen: contraste mínimo en los dos temas", () => {
+  // Texto: 4,5:1 (WCAG AA). Bordes de casillas y botones, y columnas de la gráfica: 3:1.
+  const css = leer("src/app/globals.css");
+  const tokens = (bloque: string) => Object.fromEntries([...bloque.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6})\b/gi)].map((m) => [m[1], m[2]]));
+  const claro: Record<string, string> = tokens(css.match(/:root\s*\{([\s\S]*?)\}/)?.[1] ?? "");
+  const oscuro: Record<string, string> = { ...claro, ...tokens(css.match(/prefers-color-scheme: dark\)\s*\{\s*:root\s*\{([\s\S]*?)\}/)?.[1] ?? "") };
+  const luz = (hex: string) => {
+    const [r, g, b] = [1, 3, 5]
+      .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contraste = (a: string, b: string) => {
+    const [x, y] = [luz(a), luz(b)].sort((p, q) => q - p);
+    return (x + 0.05) / (y + 0.05);
+  };
+  const cruzar = (colores: string[], fondos: string[]) => colores.flatMap((c) => fondos.map((f): [string, string] => [c, f]));
+  const texto: [string, string][] = [
+    ...cruzar(["texto", "texto-suave", "acento"], ["fondo", "superficie", "superficie-2"]),
+    ...cruzar(["verde", "ambar", "rojo"], ["superficie", "superficie-2"]),
+    ...["verde", "ambar", "rojo", "gris"].flatMap((c): [string, string][] => [
+      [c, `${c}-fondo`],
+      ["texto-suave", `${c}-fondo`],
+    ]),
+    ["sobre-acento", "acento"],
+    ["sobre-acento", "rojo"],
+  ];
+  const piezas: [string, string][] = [...cruzar(["borde-campo"], ["fondo", "superficie", "superficie-2"]), ["grafica", "superficie"]];
+  for (const [tema, t] of [
+    ["claro", claro],
+    ["oscuro", oscuro],
+  ] as const) {
+    assert.ok(Object.keys(t).length > 10, `no se han leído los colores del tema ${tema}`);
+    for (const [minimo, pares] of [
+      [4.5, texto],
+      [3, piezas],
+    ] as const)
+      for (const [a, b] of pares) {
+        assert.ok(t[a] && t[b], `${tema}: falta --${a} o --${b}`);
+        const r = contraste(t[a], t[b]);
+        assert.ok(r >= minimo, `${tema}: --${a} sobre --${b} da ${r.toFixed(2)}:1 (mínimo ${minimo}:1)`);
+      }
+  }
+});

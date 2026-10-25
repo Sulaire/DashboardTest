@@ -34,7 +34,7 @@ test("el administrador da de alta dos gestorías con su buzón y su llave", asyn
   const a = page.locator("section", { has: page.getByRole("heading", { name: "Gestoría A" }) });
   await a.getByLabel("Correo").fill("ana@e2e.ejemplo");
   await a.getByRole("button", { name: "Dar acceso" }).click();
-  await expect(a.getByText("ana@e2e.ejemplo")).toBeVisible();
+  await expect(a.getByText("ana@e2e.ejemplo", { exact: true })).toBeVisible();
 });
 
 test("los avisos entran con su llave, y el filtro rechaza lo que no debe", async ({ request }) => {
@@ -54,7 +54,7 @@ test("una persona de la Gestoría A entra y solo ve lo suyo", async ({ page }) =
   await expect(page).toHaveURL(/\/panel$/);
   await expect(page.getByText("Gestoría A")).toBeVisible();
   await expect(page.getByText("Revisar (1)")).toBeVisible();
-  await expect(page.getByRole("cell", { name: "017" })).toBeVisible();
+  await expect(page.getByRole("rowheader", { name: "017" })).toBeVisible();
   await expect(page.getByText("099")).toHaveCount(0);
   // Pedir el panel de otro cliente no sirve: eso solo lo puede el administrador.
   await page.goto(`/panel?cliente=${ids["Gestoría B"]}`);

@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Pestana } from "@/componentes/Bloques";
 import { Cabecera, Pestanas } from "@/componentes/Cabecera";
 import type { Aviso } from "@/lib/calculos";
 import { avisosDeDemo, avisosVigiaDemo } from "@/lib/demo";
 import { producto } from "@/lib/productos/cargar";
+
+export const metadata: Metadata = { title: "Demostración" };
 
 /**
  * La demo: un cliente inventado con dos productos (el buzón de facturas y el

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -21,8 +22,12 @@ import {
 import { BotonLlave } from "./boton-llave";
 import { Probador } from "./probador";
 
-const boton = "rounded-lg bg-superficie-2 px-3 py-1.5 text-sm";
-const campo = "rounded-lg border border-borde bg-superficie px-3 py-1.5";
+// Botones y campos con un borde que se ve (3:1) también dentro de las cajas
+// grises de cada producto: antes eran del mismo gris que la caja y parecían texto.
+const boton = "rounded-lg border border-borde-campo bg-superficie px-3 py-1.5 text-sm";
+const campo = "rounded-lg border border-borde-campo bg-superficie px-3 py-1.5";
+
+export const metadata: Metadata = { title: "Administración" };
 
 /** El panel de administrador: dar de alta clientes, personas, productos y llaves. Solo Jordi. */
 export default async function Admin({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -46,6 +51,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
     <>
       <Cabecera cliente="Administración" />
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+        <h1 className="text-2xl font-semibold">Clientes</h1>
         {error === "bloques" && (
           <p role="alert" className="rounded-xl bg-rojo-fondo p-4 text-rojo">
             No se ha guardado: elige al menos un bloque (si no, el cliente vería su pestaña vacía).
@@ -86,7 +92,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-xl font-semibold">{c.nombre}</h2>
                 <Link href={`/panel?cliente=${c.id}`} className="text-sm text-acento underline">
-                  Ver su panel
+                  Ver su panel<span className="sr-only"> ({c.nombre})</span>
                 </Link>
               </div>
 
@@ -99,7 +105,9 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
                       <form action={quitarPersona}>
                         <input type="hidden" name="cliente" value={c.id} />
                         <input type="hidden" name="usuario" value={p.id} />
-                        <button className="text-sm text-rojo underline">Quitar</button>
+                        <button className="text-sm text-rojo underline">
+                          Quitar<span className="sr-only"> el acceso de {p.correo}</span>
+                        </button>
                       </form>
                     </li>
                   ))}
