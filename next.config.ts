@@ -22,6 +22,9 @@ const politica = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Las pruebas de punta a punta (e2e/) compilan en su propia carpeta, para no
+  // mezclarse con la de `npm run dev` ni con la del build.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
   // `next dev` añadiría a CLAUDE.md un aviso en inglés que ese archivo ya da en español.
   agentRules: false,

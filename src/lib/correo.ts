@@ -1,3 +1,4 @@
+import { appendFileSync } from "node:fs";
 import { config, enProduccion } from "@/lib/config";
 import { correoEnlace } from "@/lib/correo-plantilla";
 
@@ -10,6 +11,9 @@ export async function mandarEnlace(correo: string, enlace: string): Promise<void
   if (!config.resendClave || !config.correoDe) {
     if (enProduccion()) throw new Error("Faltan RESEND_API_KEY o PANEL_CORREO_DE: no se puede mandar el correo.");
     console.log(`\n[Sin Resend] Enlace para entrar de ${correo}:\n${enlace}\n`);
+    // Para las pruebas de punta a punta (e2e/): el enlace también a un archivo. Nunca en producción.
+    const archivo = process.env.PANEL_ENLACES_ARCHIVO?.trim();
+    if (archivo) appendFileSync(archivo, JSON.stringify({ correo, enlace }) + "\n");
     return;
   }
   const { asunto, texto, html } = correoEnlace(enlace);

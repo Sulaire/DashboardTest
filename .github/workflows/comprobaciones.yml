@@ -56,3 +56,11 @@ jobs:
           TEST_DATABASE_URL: postgres://postgres:prueba@localhost:5432/panel_test
       - name: Compilación
         run: npm run build
+      # La app de verdad con un navegador de verdad: entrar, dar de alta, avisos,
+      # que cada cliente solo vea lo suyo y el resumen para Cosmerito (e2e/).
+      - name: Navegador para las pruebas de punta a punta
+        run: npx playwright install --with-deps chromium
+      - name: Pruebas de punta a punta
+        run: npm run e2e
+        env:
+          E2E_DATABASE_URL: postgres://postgres:prueba@localhost:5432/panel_test

@@ -71,7 +71,13 @@ npm run lint && npm run typecheck && npm test && npm run build
 
 Las pruebas de base de datos (`src/lib/db.test.ts`, entre ellas las de seguridad
 por filas) solo corren con `TEST_DATABASE_URL` apuntando a un Postgres de usar y
-tirar: **borran todas las tablas**. GitHub las pasa todas en cada subida
+tirar: **borran todas las tablas**.
+
+Las pruebas de punta a punta (`e2e/`, con Playwright) arrancan la app de verdad
+y la recorren con un navegador: entrar con el enlace, dar de alta dos clientes,
+mandar avisos, que una persona solo vea lo suyo (también con `?cliente=` de
+otro) y el resumen para Cosmerito. `E2E_DATABASE_URL=postgres://… npm run e2e`
+(también vacían esa base de datos). Compilan en `.next-e2e`, aparte. GitHub las pasa todas en cada subida
 (`.github/workflows/comprobaciones.yml`, con su propio Postgres).
 
 Las pruebas de guardia (`src/lib/guardias.test.ts`) vigilan las reglas de
