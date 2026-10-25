@@ -58,13 +58,17 @@ export async function avisosDe(clienteId: string, contratacionId: string): Promi
   return { avisos: filas.slice(0, AVISOS_MAXIMOS), incompleto: filas.length > AVISOS_MAXIMOS };
 }
 
+/** Como mucho, cuántos códigos se traen del historial (los que hablaron más recientemente). */
+export const CODIGOS_MAXIMOS = 2_000;
+
 /** Cuándo habló por última vez cada código (y el producto entero), sin límite de días. */
 export async function historialDe(clienteId: string, contratacionId: string): Promise<Historial> {
   const filas = await comoCliente(clienteId, async (c) =>
     (
       await c.query<{ codigo: string | null; ultimo: Date }>(
-        "select codigo, max(recibido_en) as ultimo from avisos where contratacion_id = $1 group by codigo",
-        [contratacionId],
+        `select codigo, max(recibido_en) as ultimo from avisos where contratacion_id = $1
+         group by codigo order by ultimo desc limit $2`,
+        [contratacionId, CODIGOS_MAXIMOS],
       )
     ).rows,
   );

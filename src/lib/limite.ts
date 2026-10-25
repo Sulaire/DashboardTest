@@ -10,27 +10,48 @@
 type Ventana = { desde: number; usadas: number };
 
 export type Limite = ((clave: string, ahora?: number) => boolean) & {
-  /** Si esa clave ya ha gastado su cupo (sin gastar una más). */
+  /** Si esa clave ya ha gastado su cupo (sin gastar una más, y sin apuntarla si no estaba). */
   lleno: (clave: string, ahora?: number) => boolean;
+  /** Devuelve una llamada gastada (p. ej. se contó un intento y resultó bueno). */
+  devolver: (clave: string, ahora?: number) => void;
 };
 
 export function crearLimite(porVentana: number, maximoClaves = 10_000, ventanaMs = 60_000): Limite {
   const ventanas = new Map<string, Ventana>();
-  function actual(clave: string, ahora: number): Ventana {
+  const viva = (v: Ventana | undefined, ahora: number): v is Ventana => !!v && ahora - v.desde < ventanaMs;
+
+  /**
+   * Para que el mapa no crezca sin fin: primero se quitan las ventanas ya
+   * pasadas; si aun así está lleno, las más viejas. Nunca se vacía entero (eso
+   * pondría a cero a la vez los cupos de todos, auditoría del 25-10-2026).
+   */
+  function hacerSitio(ahora: number) {
+    if (ventanas.size < maximoClaves) return;
+    for (const [clave, v] of ventanas) if (!viva(v, ahora)) ventanas.delete(clave);
+    for (const clave of ventanas.keys()) {
+      if (ventanas.size < maximoClaves) break;
+      ventanas.delete(clave); // un Map recuerda el orden de entrada: las primeras son las más viejas
+    }
+  }
+
+  const dentro = ((clave: string, ahora = Date.now()) => {
     let v = ventanas.get(clave);
-    if (!v || ahora - v.desde >= ventanaMs) {
-      // Para que el mapa no crezca sin fin, se vacía cuando hay demasiadas claves.
-      if (!v && ventanas.size >= maximoClaves) ventanas.clear();
+    if (!viva(v, ahora)) {
+      ventanas.delete(clave);
+      hacerSitio(ahora);
       v = { desde: ahora, usadas: 0 };
       ventanas.set(clave, v);
     }
-    return v;
-  }
-  const dentro = ((clave: string, ahora = Date.now()) => {
-    const v = actual(clave, ahora);
     v.usadas++;
     return v.usadas <= porVentana;
   }) as Limite;
-  dentro.lleno = (clave, ahora = Date.now()) => actual(clave, ahora).usadas >= porVentana;
+  dentro.lleno = (clave, ahora = Date.now()) => {
+    const v = ventanas.get(clave);
+    return viva(v, ahora) && v.usadas >= porVentana;
+  };
+  dentro.devolver = (clave, ahora = Date.now()) => {
+    const v = ventanas.get(clave);
+    if (viva(v, ahora) && v.usadas > 0) v.usadas--;
+  };
   return dentro;
 }

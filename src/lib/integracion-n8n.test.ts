@@ -22,6 +22,8 @@ test("el código nunca sale de id_negocio, y sin codigo_panel no hay aviso", () 
   assert.equal(n8n.panelCodigo({ id_negocio: "BARDEEJEMPLO", codigo_panel: " 017 " }), "017");
   assert.equal(n8n.panelCodigo({ codigo_panel: "Bar Ejemplo" }), null);
   assert.equal(n8n.panelCodigo({ codigo_panel: "BARDEEJEMPLO" }), null);
+  assert.equal(n8n.panelCodigo({ codigo_panel: "612-345-678" }), null);
+  assert.equal(n8n.panelCodigo({ codigo_panel: "garcia.lopez.7" }), null);
 });
 
 test("pendientes: como el Resumen Semanal, sin descartes ni lo ya resuelto ni otros negocios", () => {
@@ -34,6 +36,12 @@ test("pendientes: como el Resumen Semanal, sin descartes ni lo ya resuelto ni ot
     { id_negocio: "B", estado: "pendiente", motivo: "sin_fecha" },
   ];
   assert.equal(n8n.panelPendientes(filas, "A"), 2);
+});
+
+test("la regla del código en n8n es la misma que la del panel", async () => {
+  const { motivoCodigo } = await import("@/lib/avisos");
+  for (const c of ["017", "C-023", "BAR01", "A-7", "123456", "1234567", "garcia.lopez.7", "BARDEEJEMPLO", "612-345-678", "x1", "abcde1", "", "a b 1"])
+    assert.equal(n8n.panelCodigoValido(c), motivoCodigo(c) === null, c);
 });
 
 test("todos los avisos que genera pasan el filtro del panel", () => {
@@ -59,15 +67,36 @@ test("el aviso de la pasada trae lo que el panel necesita para el ámbar", () =>
   });
 });
 
-test("la pasada se manda si archivó algo, si cambian las pendientes o cada 12 horas", () => {
+test("la pasada se manda si archivó algo, si cambian las pendientes o cada 12 horas; se apunta solo si el panel dijo que sí", () => {
   const estado: Record<string, unknown> = {};
   const h = 3_600_000;
+  const pasada = (pendientes: number) => n8n.panelAvisoPasada("017", 0, pendientes);
   assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 0, 0), true); // la primera vez
-  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 0, 1 * h), false); // nada nuevo
-  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 2, 0, 2 * h), true); // archivó
+  // El panel falló (deploy, 500): no se apunta, así que la siguiente pasada lo repite.
+  assert.equal(n8n.panelApuntarEnviados(estado, [pasada(0)], [{ ok: false, error: "x" }], 0), 0);
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 0, 1 * h), true);
+  // Ahora sí llegó.
+  assert.equal(n8n.panelApuntarEnviados(estado, [pasada(0)], [{ ok: true }], 1 * h), 1);
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 0, 2 * h), false); // nada nuevo
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 2, 0, 3 * h), true); // archivó
   assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 1, 3 * h), true); // cambian las pendientes
-  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 1, 4 * h), false);
-  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 1, 15 * h), true); // latido
-  assert.equal(n8n.panelDebeMandarPasada(estado, "023", 0, 0, 15 * h), true); // cada negocio, lo suyo
-  assert.equal(n8n.panelDebeMandarPasada(null, "017", 0, 0, 15 * h), true); // sin estado, siempre
+  assert.equal(n8n.panelDebeMandarPasada(estado, "017", 0, 0, 14 * h), true); // latido (12 h desde la última que llegó)
+  assert.equal(n8n.panelDebeMandarPasada(estado, "023", 0, 0, 2 * h), true); // cada negocio, lo suyo
+  assert.equal(n8n.panelDebeMandarPasada(null, "017", 0, 0, 2 * h), true); // sin estado, siempre
+  // Los avisos de revisión (sin pendientes) no se apuntan, aunque lleguen.
+  assert.equal(n8n.panelApuntarEnviados(estado, n8n.panelAvisosRevision("017", [{ motivo: "sin_fecha" }]), [{ ok: true }], 2 * h), 0);
+});
+
+test("contar las facturas de todas las vueltas del bucle, no solo la última", () => {
+  const vueltas = [[{}], [{}], [{}]];
+  assert.equal(n8n.panelContarVueltas((r: number) => vueltas[r] ?? []), 3);
+  // n8n lanza un error al pedir una vuelta que no existe: también se para ahí.
+  assert.equal(
+    n8n.panelContarVueltas((r: number) => {
+      if (r >= 2) throw new Error("no existe");
+      return [{}, {}];
+    }),
+    4,
+  );
+  assert.equal(n8n.panelContarVueltas(() => []), 0);
 });

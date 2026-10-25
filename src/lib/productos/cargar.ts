@@ -101,7 +101,12 @@ export function producto(id: string): Producto | undefined {
   return cargarProductos().productos.get(id);
 }
 
-/** Los bloques que ve un cliente: los que eligió (en el orden del producto), o todos. */
+/**
+ * Los bloques que ve un cliente: los que eligió (en el orden del producto), o
+ * todos. Si de los elegidos no queda ninguno (p. ej. se cambió el id de un
+ * bloque en productos/), todos: una pestaña nunca se queda vacía.
+ */
 export function bloquesElegidos(p: Producto, elegidos: string[] | null): Bloque[] {
-  return elegidos ? p.bloques.filter((b) => elegidos.includes(b.id)) : p.bloques;
+  const quedan = elegidos ? p.bloques.filter((b) => elegidos.includes(b.id)) : p.bloques;
+  return quedan.length ? quedan : p.bloques;
 }

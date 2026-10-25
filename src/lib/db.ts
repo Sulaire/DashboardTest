@@ -44,21 +44,29 @@ export function urlDeLaApp(urlDueno: string, contrasena: string): string {
   return url.toString();
 }
 
+/**
+ * Si Postgres corta una conexión que estaba esperando (se reinicia, Railway lo
+ * mueve), el pool avisa con un «error»; sin nadie escuchando, eso tumbaría el
+ * proceso. Se apunta en el log y el pool abre otra cuando haga falta.
+ */
+function escuchar(pool: pg.Pool): pg.Pool {
+  pool.on("error", (e) => console.error("Postgres cortó una conexión en reposo (se abrirá otra):", e.message));
+  return pool;
+}
+
 function preparar(): Promise<{ dueno: pg.Pool; app: pg.Pool }> {
   const urlDueno = config.baseDeDatos;
   const contrasena = config.contrasenaApp;
   if (!urlDueno || !contrasena) return Promise.reject(new SinBaseDeDatos());
   if (!g.__panelListo) {
-    const dueno = (g.__panelDueno ??= new pg.Pool({ connectionString: urlDueno, max: 3, connectionTimeoutMillis: 10_000 }));
+    const dueno = (g.__panelDueno ??= escuchar(new pg.Pool({ connectionString: urlDueno, max: 3, connectionTimeoutMillis: 10_000 })));
     g.__panelListo = (async () => {
       await migrar(dueno);
       await prepararRolApp(dueno, contrasena);
       await asegurarAdmin(dueno, config.correoAdmin);
-      const app = (g.__panelApp ??= new pg.Pool({
-        connectionString: urlDeLaApp(urlDueno, contrasena),
-        max: 8,
-        connectionTimeoutMillis: 10_000,
-      }));
+      const app = (g.__panelApp ??= escuchar(
+        new pg.Pool({ connectionString: urlDeLaApp(urlDueno, contrasena), max: 8, connectionTimeoutMillis: 10_000 }),
+      ));
       return { dueno, app };
     })();
     // Si falla (p. ej. la base de datos aún arrancando), el siguiente intento lo repite.
@@ -166,8 +174,17 @@ export async function prepararRolApp(pool: pg.Pool, contrasena: string): Promise
   try {
     // ALTER ROLE no acepta parámetros ($1): el verificador va escapado por pg.
     await cliente.query(
-      `alter role ${ROL_APP} with login nosuperuser nobypassrls password ${cliente.escapeLiteral(verificadorScram(contrasena))}`,
+      `alter role ${ROL_APP} with login nosuperuser nobypassrls noinherit nocreatedb nocreaterole password ${cliente.escapeLiteral(verificadorScram(contrasena))}`,
     );
+    // Si alguien metiera a panel_app en otro rol (p. ej. el dueño de las tablas), podría saltarse las reglas: no se arranca.
+    const roles = (
+      await cliente.query<{ rol: string }>(
+        `select r.rolname as rol from pg_auth_members m join pg_roles r on r.oid = m.roleid
+         join pg_roles a on a.oid = m.member where a.rolname = $1`,
+        [ROL_APP],
+      )
+    ).rows;
+    if (roles.length) throw new Error(`panel_app es miembro de otros roles (${roles.map((r) => r.rol).join(", ")}): quítaselos, podrían saltarse las reglas por filas.`);
   } finally {
     cliente.release();
   }

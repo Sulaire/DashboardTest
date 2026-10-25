@@ -176,9 +176,10 @@ export function filas(avisos: Aviso[], cifra: string | undefined, ahora: Date, a
       pendientes: pendientes.get(codigo) ?? null,
     }));
   // Los códigos que hablaron alguna vez pero no en los días que se leen: «Sin movimiento».
+  // (Con un Set: con miles de códigos, buscar en la lista cada vez dejaba el servidor parado segundos.)
+  const yaEstan = new Set(lista.map((f) => f.codigo));
   for (const [codigo, ultimo] of historial?.codigos ?? [])
-    if (codigo !== "" && !lista.some((f) => f.codigo === codigo))
-      lista.push({ codigo, estado: "quieto", ultimo, delMes: cifra ? 0 : null, pendientes: null });
+    if (codigo !== "" && !yaEstan.has(codigo)) lista.push({ codigo, estado: "quieto", ultimo, delMes: cifra ? 0 : null, pendientes: null });
   return lista.sort((x, y) => ORDEN_FILA[x.estado] - ORDEN_FILA[y.estado] || x.codigo.localeCompare(y.codigo, "es", { numeric: true }));
 }
 

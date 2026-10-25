@@ -84,7 +84,7 @@ algo o cuando cambian las pendientes (el código de
 la ingesta solo corre cuando **llega correo**: el aviso de «sigo vivo»
 (`facturas: 0` con las pendientes de ese momento) tiene que salir de un flujo
 con horario, el 05 Alerta de Latido, una vez al día (docs/N8N_BUZON.md, paso
-1b). Si pasan `silencio_horas` (48) sin noticias, el semáforo se pone rojo.
+1c). Si pasan `silencio_horas` (48) sin noticias, el semáforo se pone rojo.
 
 ### Motivos que esperan a alguien (cuentan en `pendientes`)
 

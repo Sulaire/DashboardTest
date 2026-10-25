@@ -21,57 +21,90 @@ cambia, que sea aquí, y se vuelve a copiar.
 - [ ] En n8n, una credencial **Header Auth** «Panel de clientes»: nombre
       `Authorization`, valor `Bearer <la llave>`.
 
-## 1. Ingesta (04): un aviso por pasada y uno por cada factura que espera
+## 1. Ingesta (04): dos sitios, porque tiene dos caminos
 
-Después de `Registrar Revision` y `Registrar Factura` (cuando ya está todo
-escrito), junto al `Resumen` que manda el Telegram:
+En la ingesta, «Archivar?» parte en dos: lo que se archiva va por el
+«Bucle» y acaba en «Resumen»; lo que va a revisión acaba en «Registrar
+Revision». Los dos caminos **no se juntan**, y una pasada puede recorrer
+solo uno. Por eso hay dos enganches:
 
-1. Un nodo **«Una Vez»** (devuelve un solo item), para que lo de abajo no se
-   ejecute una vez por factura. Es el fallo de las 63 lecturas de Sheets.
-2. **Leer Revision** otra vez (ahora ya trae las filas de esta pasada).
-3. Un nodo **Code «Avisos Panel»**: el contenido entero de
-   `integraciones/n8n/aviso_panel.js` y, detrás, este cuerpo:
+**1a. Detrás de «Registrar Revision»** (las facturas que esperan a alguien):
+
+1. Un nodo **Code «Avisos Revisión Panel»** (modo «Run Once for All
+   Items»): el contenido entero de `integraciones/n8n/aviso_panel.js` y,
+   detrás, este cuerpo:
 
 ```js
-// Cuerpo de «Avisos Panel» (va detrás de aviso_panel.js, en el mismo nodo).
-var cfgPanel = $('CONFIG').first().json;
-var negocioPanel = {};
+// Cuerpo de «Avisos Revisión Panel» (detrás de aviso_panel.js, en el mismo nodo).
+var cfgRev = $('CONFIG').first().json;
+var negocioRev = {};
 try {
-  var negs = $('Leer Negocio').all();
-  for (var iP = 0; iP < negs.length; iP++)
-    if (String(negs[iP].json.id_negocio) === String(cfgPanel.id_negocio)) negocioPanel = negs[iP].json;
+  var negsR = $('Leer Negocio').all();
+  for (var iR = 0; iR < negsR.length; iR++)
+    if (String(negsR[iR].json.id_negocio) === String(cfgRev.id_negocio)) negocioRev = negsR[iR].json;
 } catch (e) {}
-var codigoPanel = panelCodigo(negocioPanel);
-if (!codigoPanel) return []; // sin codigo_panel no se manda nada
-
-var revisionPanel = [];
-try { revisionPanel = $('Leer Revision Panel').all().map(function (x) { return x.json || {}; }); } catch (e) {}
-
-// Lo archivado y lo nuevo en Revision en ESTA pasada.
-var archivadasPanel = 0, nuevasPanel = [];
-try { archivadasPanel = $('Registrar Factura').all().length; } catch (e) {}
-try { nuevasPanel = $('Registrar Revision').all().map(function (x) { return x.json || {}; }); } catch (e) {}
-
-var avisosPanel = panelAvisosRevision(codigoPanel, nuevasPanel);
-var pendientesPanel = panelPendientes(revisionPanel, cfgPanel.id_negocio);
-// Solo si cambió algo o hace 12 h del último: así no llegan 24 avisos al día por negocio.
-// (Ojo: la ingesta solo corre cuando llega correo; el aviso diario «sigo vivo» sale del 05, paso 1b.)
-if (panelDebeMandarPasada($getWorkflowStaticData('global'), codigoPanel, archivadasPanel, pendientesPanel, Date.now()))
-  avisosPanel.push(panelAvisoPasada(codigoPanel, archivadasPanel, pendientesPanel));
-return avisosPanel.map(function (a) { return { json: a }; });
+var codigoRev = panelCodigo(negocioRev);
+if (!codigoRev) return []; // sin codigo_panel no se manda nada
+var nuevasRev = $input.all().map(function (x) { return x.json || {}; }); // las filas que se acaban de apuntar
+return panelAvisosRevision(codigoRev, nuevasRev).map(function (a) { return { json: a }; });
 ```
 
-4. Un nodo **HTTP Request** «Mandar al Panel»: POST a
-   `https://<panel>/api/avisos`, la credencial «Panel de clientes», cuerpo
-   JSON `={{ $json }}`. Se ejecuta una vez por aviso, que es lo que se quiere.
-   **Con «On Error: Continue»** y un tiempo máximo de 10 s: si el panel está
-   caído, la ingesta sigue archivando igual.
+2. Un nodo **HTTP Request «Mandar al Panel»** (ver abajo).
 
-Ojo con los nombres: `Registrar Factura` y `Registrar Revision` solo tienen
-items si en esa pasada se escribió algo; el `try` lo cubre. Si los nodos se
-llaman distinto en el servidor, se cambian los nombres en el cuerpo.
+**1b. Detrás de «Resumen»** (las pasadas que archivan algo):
 
-## 1b. Un aviso diario aunque no llegue nada (en el 05)
+1. Un nodo **Google Sheets «Leer Revision Panel»**: lee la pestaña
+   `Revision` (ya con las filas de esta pasada).
+2. Un nodo **Code «Pasada Panel»**: `aviso_panel.js` y, detrás:
+
+```js
+// Cuerpo de «Pasada Panel» (detrás de aviso_panel.js, en el mismo nodo).
+var cfgPas = $('CONFIG').first().json;
+var negocioPas = {};
+try {
+  var negsP = $('Leer Negocio').all();
+  for (var iP = 0; iP < negsP.length; iP++)
+    if (String(negsP[iP].json.id_negocio) === String(cfgPas.id_negocio)) negocioPas = negsP[iP].json;
+} catch (e) {}
+var codigoPas = panelCodigo(negocioPas);
+if (!codigoPas) return [];
+// Todas las vueltas del bucle: $('Registrar Factura').all() solo daría la última.
+var archivadasPas = panelContarVueltas(function (r) { return $('Registrar Factura').all(0, r); });
+var revisionPas = $('Leer Revision Panel').all().map(function (x) { return x.json || {}; });
+var pendientesPas = panelPendientes(revisionPas, cfgPas.id_negocio);
+if (!panelDebeMandarPasada($getWorkflowStaticData('global'), codigoPas, archivadasPas, pendientesPas, Date.now())) return [];
+return [{ json: panelAvisoPasada(codigoPas, archivadasPas, pendientesPas) }];
+```
+
+3. Un nodo **HTTP Request «Mandar al Panel»** (ver abajo).
+4. Un nodo **Code «Apuntar Panel»**, detrás del HTTP: `aviso_panel.js` y,
+   detrás, esto. Apunta la pasada solo si el panel respondió `{"ok": true}`;
+   si el envío falló (el panel se estaba actualizando, un 500…), no se apunta
+   y la siguiente pasada lo vuelve a mandar.
+
+```js
+// Cuerpo de «Apuntar Panel» (detrás de aviso_panel.js, en el mismo nodo).
+var enviadosAp = $('Pasada Panel').all().map(function (x) { return x.json || {}; });
+var respuestasAp = $input.all().map(function (x) { return x.json || {}; });
+panelApuntarEnviados($getWorkflowStaticData('global'), enviadosAp, respuestasAp, Date.now());
+return [];
+```
+
+**El nodo «Mandar al Panel»** (en cada sitio donde se use): HTTP Request,
+POST a `https://<panel>/api/avisos`, la credencial «Panel de clientes»,
+cuerpo JSON `={{ JSON.stringify($json) }}`. Se ejecuta una vez por aviso.
+**Con «On Error: Continue»** y un tiempo máximo de 10 s: si el panel está
+caído, la ingesta sigue archivando igual.
+
+Ojo con los nombres: si los nodos se llaman distinto en el servidor, se
+cambian en los cuerpos. Y **comprobar el conteo** en una ejecución de verdad
+con 2 o más facturas: en `/admin` → «Últimos avisos recibidos» tiene que salir
+el número bueno (si sale 1, `panelContarVueltas` no está leyendo las vueltas
+como se espera: avisa). El Telegram «Resumen» de la v3 usa
+`$('Registrar Factura').all()` y podría tener el mismo fallo: mira si alguna
+vez ha dicho «Archivadas: 1» con más facturas.
+
+## 1c. Un aviso diario aunque no llegue nada (en el 05)
 
 La ingesta (04) solo arranca cuando **llega un correo**: el disparador de
 Gmail no hace nada si no hay correo nuevo. Un negocio que pasa dos días sin
@@ -80,9 +113,10 @@ pondría en rojo («sin noticias del buzón») sin motivo. Por eso el aviso de
 «sigo vivo» sale de un flujo con horario: el **05 Alerta de Latido**, que ya
 corre cada mañana.
 
-Al final del 05, el mismo patrón de antes («Una Vez» → leer `Negocios` y
-`Revision` → Code → HTTP «Mandar al Panel», con «On Error: Continue»), con
-este cuerpo detrás de `aviso_panel.js`:
+Al final del 05: un nodo «Una Vez» (devuelve un solo item: así lo de detrás
+no se ejecuta una vez por proveedor), leer `Negocios` y `Revision` («Leer
+Revision Panel»), un Code «Latido Panel» y un HTTP «Mandar al Panel», con «On
+Error: Continue». El cuerpo de «Latido Panel», detrás de `aviso_panel.js`:
 
 ```js
 // Cuerpo de «Latido Panel» en el 05: un aviso al día por negocio, haya o no facturas.

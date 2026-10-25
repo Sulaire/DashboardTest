@@ -45,8 +45,12 @@ after(async () => {
 });
 
 test("panel_app no es dueño de nada y no puede saltarse las reglas", sin, async () => {
-  const [rol] = (await (await poolDueno()).query("select rolsuper, rolbypassrls from pg_roles where rolname = 'panel_app'")).rows;
-  assert.deepEqual(rol, { rolsuper: false, rolbypassrls: false });
+  const [rol] = (await (await poolDueno()).query("select rolsuper, rolbypassrls, rolinherit from pg_roles where rolname = 'panel_app'")).rows;
+  assert.deepEqual(rol, { rolsuper: false, rolbypassrls: false, rolinherit: false });
+  const miembro = (
+    await (await poolDueno()).query("select 1 from pg_auth_members m join pg_roles a on a.oid = m.member where a.rolname = 'panel_app'")
+  ).rows;
+  assert.equal(miembro.length, 0, "panel_app no es miembro de ningún rol");
   const [yo] = await consultaApp<{ current_user: string }>("select current_user");
   assert.equal(yo.current_user, "panel_app");
   const propias = await consultaApp("select tablename from pg_tables where schemaname = 'public' and tableowner = 'panel_app'");
@@ -150,7 +154,20 @@ test("los avisos de más de 12 meses se borran", sin, async () => {
     "insert into avisos (cliente_id, contratacion_id, ok, texto, recibido_en) values ($1, $2, true, 'viejo', now() - interval '13 months')",
     [A, contratacionA],
   );
+  // Y de paso las sesiones y los enlaces caducados (la IP, el navegador, el correo escrito).
+  const [u] = (await pool.query(`select id from "user" limit 1`)).rows;
+  await pool.query(
+    `insert into "session" (id, "expiresAt", token, "updatedAt", "ipAddress", "userAgent", "userId")
+     values ('s-vieja', now() - interval '400 days', 't-vieja', now(), '1.2.3.4', 'Navegador', $1),
+            ('s-viva', now() + interval '1 day', 't-viva', now(), '1.2.3.4', 'Navegador', $1)`,
+    [u.id],
+  );
+  await pool.query(
+    `insert into "verification" (id, identifier, value, "expiresAt") values ('v-vieja', 'x', 'alguien@ejemplo.es', now() - interval '1 day')`,
+  );
   assert.equal(await borrarAvisosViejos(), 1);
+  assert.deepEqual((await pool.query(`select id from "session" where id like 's-%' order by id`)).rows, [{ id: "s-viva" }]);
+  assert.equal((await pool.query(`select 1 from "verification" where id = 'v-vieja'`)).rows.length, 0);
 });
 
 test("los últimos avisos de un producto, para el administrador", sin, async () => {

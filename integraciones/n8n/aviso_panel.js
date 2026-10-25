@@ -33,14 +33,20 @@ var PANEL_TEXTOS = {
 var PANEL_DESCARTES = ['albaran', 'extracto_bancario', 'otro_suministro_no_es_del_negocio',
                        'probable_firma', 'adjunto_no_pdf', 'ia_dice_que_no_es_factura'];
 
-// Corto, sin espacios y con al menos una cifra (un nombre no vale como código).
-var PANEL_CODIGO = /^(?=.*\d)[A-Za-z0-9._-]{1,32}$/;
+// La misma regla que el panel (src/lib/avisos.ts, motivoCodigo): corto, sin
+// espacios, de 1 a 6 cifras y como mucho 4 letras. Ni un nombre ni un teléfono.
+var PANEL_CODIGO = /^[A-Za-z0-9._-]{1,16}$/;
+function panelCodigoValido(c) {
+  if (!PANEL_CODIGO.test(c)) return false;
+  var cifras = c.replace(/\D/g, '').length, letras = c.replace(/[^A-Za-z]/g, '').length;
+  return cifras >= 1 && cifras <= 6 && letras <= 4;
+}
 
 // El código del negocio para el panel: la columna codigo_panel de Negocios.
 // NUNCA id_negocio (en la v3 es el nombre del negocio en mayúsculas). Sin código, null: no se manda nada.
 function panelCodigo(filaNegocio) {
   var c = String((filaNegocio && filaNegocio.codigo_panel) || '').trim();
-  return PANEL_CODIGO.test(c) ? c : null;
+  return panelCodigoValido(c) ? c : null;
 }
 
 function panelEsDescarte(motivo) {
@@ -80,18 +86,47 @@ function panelAvisoPasada(codigo, archivadas, pendientes) {
 // Si toca mandar el aviso de la pasada: cuando archivó algo, cuando cambian las
 // pendientes, o si hace más de 12 horas del último. Ojo: la ingesta solo corre
 // cuando llega correo, así que el «sigo vivo» de verdad lo manda el 05 cada
-// mañana (docs/N8N_BUZON.md, paso 1b); el panel se pone rojo a las 48 h sin noticias. Así llegan unos
-// pocos avisos al día por negocio en vez de 24, y el panel cuenta deprisa.
+// mañana (docs/N8N_BUZON.md, paso 1c); el panel se pone rojo a las 48 h sin noticias.
 // `estado` es $getWorkflowStaticData('global'), que n8n guarda entre
 // ejecuciones de producción (no en las de prueba a mano: ahí siempre manda).
+// Aquí solo se MIRA: lo enviado se apunta después, con panelApuntarEnviados,
+// cuando el panel ha dicho que sí (si el envío falla, la siguiente pasada lo repite).
 var PANEL_LATIDO_MS = 12 * 3600 * 1000;
 function panelDebeMandarPasada(estado, codigo, archivadas, pendientes, ahoraMs) {
-  var clave = 'panel:' + codigo;
-  var antes = (estado && estado[clave]) || null;
-  var toca = !antes || Number(archivadas) > 0 || antes.pendientes !== Number(pendientes) ||
-             ahoraMs - antes.cuando >= PANEL_LATIDO_MS;
-  if (toca && estado) estado[clave] = { pendientes: Number(pendientes), cuando: ahoraMs };
-  return toca;
+  var antes = (estado && estado['panel:' + codigo]) || null;
+  return !antes || Number(archivadas) > 0 || antes.pendientes !== Number(pendientes) ||
+         ahoraMs - antes.cuando >= PANEL_LATIDO_MS;
+}
+
+// Después del nodo HTTP «Mandar al Panel»: apunta las pasadas que el panel ha
+// aceptado. `enviados` son los avisos que salieron (en orden) y `respuestas`
+// lo que contestó el panel a cada uno (el nodo HTTP devuelve uno por aviso, en
+// el mismo orden). Solo cuenta un {"ok": true}.
+function panelApuntarEnviados(estado, enviados, respuestas, ahoraMs) {
+  var apuntados = 0;
+  for (var i = 0; i < (enviados || []).length; i++) {
+    var a = enviados[i] || {}, r = (respuestas || [])[i] || {};
+    if (!a.cliente || !a.cifras || !('pendientes' in a.cifras) || r.ok !== true || !estado) continue;
+    estado['panel:' + a.cliente] = { pendientes: Number(a.cifras.pendientes), cuando: ahoraMs };
+    apuntados++;
+  }
+  return apuntados;
+}
+
+// Cuántos items sacó un nodo en TODAS sus vueltas. Dentro de un bucle (el
+// «Bucle» de la ingesta, de uno en uno), $('Registrar Factura').all() solo da
+// la última vuelta: una pasada con 3 facturas contaría 1. `leer(vuelta)` es
+// function (r) { return $('Registrar Factura').all(0, r); }.
+// (Comprobarlo en una ejecución de verdad con 2 o más facturas.)
+function panelContarVueltas(leer) {
+  var n = 0;
+  for (var r = 0; r < 100000; r++) {
+    var items;
+    try { items = leer(r); } catch (e) { break; }
+    if (!items || !items.length) break;
+    n += items.length;
+  }
+  return n;
 }
 
 // Un aviso por cada fila NUEVA de Revision que espera a alguien (los descartes no).
@@ -126,5 +161,7 @@ function panelAvisoGeneral(ok, que) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { panelCodigo: panelCodigo, panelEsDescarte: panelEsDescarte, panelTexto: panelTexto,
     panelPendientes: panelPendientes, panelAvisoPasada: panelAvisoPasada, panelAvisosRevision: panelAvisosRevision,
-    panelAvisoEnvio: panelAvisoEnvio, panelAvisoGeneral: panelAvisoGeneral, panelDebeMandarPasada: panelDebeMandarPasada, PANEL_TEXTOS: PANEL_TEXTOS };
+    panelAvisoEnvio: panelAvisoEnvio, panelAvisoGeneral: panelAvisoGeneral, panelDebeMandarPasada: panelDebeMandarPasada,
+    panelApuntarEnviados: panelApuntarEnviados, panelContarVueltas: panelContarVueltas, panelCodigoValido: panelCodigoValido,
+    PANEL_TEXTOS: PANEL_TEXTOS };
 }

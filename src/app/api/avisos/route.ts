@@ -3,7 +3,7 @@ import { limpiarAviso } from "@/lib/avisos";
 import { destinoDeLlave, guardarAviso } from "@/lib/datos";
 import { hayBaseDeDatos } from "@/lib/db";
 import { crearLimite } from "@/lib/limite";
-import { llaveDeCabecera } from "@/lib/llaves";
+import { huellaDe, llaveDeCabecera } from "@/lib/llaves";
 import { producto } from "@/lib/productos/cargar";
 import { limpiarSiToca } from "@/lib/retencion";
 
@@ -15,25 +15,44 @@ import { limpiarSiToca } from "@/lib/retencion";
  *     "texto": "12 facturas archivadas", "cifras": { "facturas": 12 } }
  *
  * La llave decide de qué cliente es el aviso (no el cuerpo). Explicado en docs/AVISOS.md.
- * Con freno: 120 avisos por minuto por producto contratado, y 30 llaves que
- * no valen por minuto desde cada IP (para que probar llaves inventadas no
- * cargue la base de datos). Las llaves malas nunca gastan el cupo de las
- * buenas: nadie puede bloquear los avisos de verdad mandando basura.
+ * Con freno: 120 avisos por minuto por producto contratado, y 30 intentos con
+ * llaves desconocidas por minuto desde cada IP (para que probar llaves
+ * inventadas no cargue la base de datos). El intento se cuenta ANTES de mirar
+ * la base de datos (si llegan 300 a la vez, solo 30 la tocan) y se devuelve si
+ * la llave vale. Una llave que ha valido hace poco no pasa por ese freno: las
+ * llaves malas de otro (o una vieja olvidada en n8n) nunca bloquean a las
+ * buenas, aunque salgan de la misma IP (auditoría del 25-10-2026).
  */
 const porLlave = crearLimite(120);
-const fallosPorIp = crearLimite(30);
+const intentosPorIp = crearLimite(30);
+const BUENAS_MS = 10 * 60_000;
+const buenas = new Map<string, number>(); // huella de una llave que ha valido → hasta cuándo se fía uno de ella
+
+function esBuena(huella: string, ahora: number): boolean {
+  const hasta = buenas.get(huella);
+  if (hasta && hasta > ahora) return true;
+  if (hasta) buenas.delete(huella);
+  return false;
+}
 export async function POST(request: Request) {
   if (!hayBaseDeDatos()) return json({ ok: false, error: "El panel aún no tiene base de datos." }, 503);
   const llave = llaveDeCabecera(request.headers.get("authorization"));
   if (!llave) return json({ ok: false, error: "Falta Authorization: Bearer <llave del producto>." }, 401);
   const ip = ipDe(request);
-  if (fallosPorIp.lleno(ip)) return json({ ok: false, error: "Demasiadas llaves que no valen: espera un minuto." }, 429);
+  const huella = huellaDe(llave);
+  const ahora = Date.now();
+  const conocida = esBuena(huella, ahora);
+  if (!conocida && !intentosPorIp(ip, ahora)) return json({ ok: false, error: "Demasiadas llaves que no valen: espera un minuto." }, 429);
   try {
+    // La base de datos se mira siempre: una llave anulada deja de valer al momento.
     const destino = await destinoDeLlave(llave);
     if (!destino) {
-      fallosPorIp(ip);
+      buenas.delete(huella);
       return json({ ok: false, error: "Esa llave no vale (o está anulada, o el producto está desactivado)." }, 401);
     }
+    if (!conocida) intentosPorIp.devolver(ip, ahora);
+    if (buenas.size > 5_000) buenas.clear();
+    buenas.set(huella, ahora + BUENAS_MS);
     const descripcion = producto(destino.producto);
     if (!descripcion) return json({ ok: false, error: "El producto de esta llave ya no existe en el panel." }, 409);
     if (!porLlave(destino.contratacionId)) return json({ ok: false, error: "Demasiados avisos de este producto: espera un minuto." }, 429);

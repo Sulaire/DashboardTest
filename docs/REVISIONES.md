@@ -57,4 +57,27 @@ Lo vio el agente que escribió el contrato y la guía: el disparador de Gmail de
 la ingesta (04) solo arranca cuando llega correo. El aviso de «sigo vivo»
 cada 12 horas que proponía `docs/N8N_BUZON.md` no saldría en días sin
 facturas, y el panel se pondría en rojo a las 48 horas sin motivo. Arreglo:
-el «sigo vivo» sale del 05 Alerta de Latido, que tiene horario (paso 1b).
+el «sigo vivo» sale del 05 Alerta de Latido, que tiene horario (paso 1c).
+
+## Segunda auditoría (25-10-2026)
+
+Otro agente, solo mirando, contra `fc60c13` (y un vistazo a lo que entró
+mientras). Comprobó que los arreglos de la primera aguantan y buscó lo nuevo.
+
+| # | Qué pasaba | Qué se hizo |
+|---|---|---|
+| 1 | El freno de llaves malas se miraba **antes** de saber si la llave era buena: 30 intentos con una llave vieja olvidada en n8n bloqueaban un minuto los avisos buenos de **todos** los clientes que salen del mismo n8n. Y se contaba después de consultar la base de datos: 300 a la vez, 300 consultas. | El intento se cuenta antes de mirar la base de datos (300 a la vez → 30 la tocan) y se devuelve si la llave vale. Una llave que ha valido en los últimos 10 minutos no pasa por ese freno. La base de datos se mira siempre: anular una llave vale al momento. |
+| 2 | El código y las cifras dejaban pasar lo que el texto no: `612-345-678`, `12.345.678-Z` o `garcia.lopez.7` como código, y `612345678` como cifra. | Código: de 1 a 6 cifras y como mucho 4 letras (`motivoCodigo`, la misma regla en el código de n8n, con una prueba que lo compara). Cifras: hasta 999.999. |
+| 3 | Más formas de colar datos en el texto: separadores de 3 caracteres, invisibles que faltaban (U+2066, U+034F, U+3164…), cifras árabes o devanagari, `ana @ gmail.com`, `ana{at}…`, `79eur`, `79'03`, `pts`, `₹`, direcciones web. | Se quitan todos los «ignorables» de Unicode y el relleno coreano; se rechazan cifras que no sean 0-9, cualquier `@`, direcciones web, monedas por símbolo (`\p{Sc}`) o nombre (también pegado a la cifra) y céntimos con `'`. Separadores hasta 3. Todos los casos, en las pruebas. Quedan sin detectar los nombres y los números escritos con letras: por eso el formato es tan estrecho. |
+| 4 | Un carácter nulo en el texto daba 500 (Postgres no lo acepta). | Los caracteres de control se rechazan con 400. |
+| 5 | El «sigo vivo» de n8n no salía en días sin correo. | Ya arreglado (sale del 05). Además la receta dice ahora dónde va cada nodo: la ingesta tiene dos caminos que no se juntan (1a y 1b en `docs/N8N_BUZON.md`). |
+| 6 | En n8n, `$('Registrar Factura').all()` dentro del bucle da solo la última vuelta: 3 facturas contarían 1 (sin comprobar en n8n). | `panelContarVueltas` suma todas las vueltas. **Hay que comprobarlo** en una ejecución de verdad; el Telegram «Resumen» de la v3 podría tener el mismo fallo. |
+| 7 | La pasada se apuntaba como enviada antes de saber si el panel la había recibido. | Se apunta después, solo con un `{"ok": true}` (`panelApuntarEnviados`, nodo «Apuntar Panel»); si falla, la siguiente pasada la repite. |
+| 8 | Con miles de códigos, la lista dejaba el servidor parado segundos (buscaba en una lista por cada código). | Un `Set`; el historial trae como mucho 2.000 códigos y la lista enseña 300 («y N más»). |
+| 9 | Las sesiones caducadas (con IP y navegador) y los enlaces caducados (con el correo escrito) no se borraban nunca. | Se borran con los avisos viejos (`retencion.ts`), con su prueba. |
+| 10 | Los escáneres de enlaces de los correos de empresa (Microsoft 365 Safe Links…) podían gastar el enlace de un solo uso antes que la persona. | El correo lleva a `/entrar/confirmar`, una página con el botón «Entrar»; el enlace se gasta al pulsar (`src/lib/enlace.ts`). |
+| 11 | El freno en memoria vaciaba todas las cuentas al llegar a 10.000 claves (y «lleno» apuntaba a todos). | Quita primero las ventanas pasadas y luego las más viejas; nunca pone a todos a cero. «Lleno» ya no apunta a nadie. |
+| 12 | Sin nadie escuchando el «error» de los pools, un corte de Postgres podía tumbar el proceso. | `pool.on("error")` en los dos. |
+| 13 | Una pestaña podía quedarse vacía si se cambiaba el id de un bloque. | Si de los elegidos no queda ninguno, se enseñan todos. |
+| 14 | Nadie comprobaba que panel_app no fuera miembro de otro rol (heredaría sus permisos). | `noinherit` y, si es miembro de algo, la app no arranca; la prueba lo mira. |
+| 15 | Un código con algo abierto hace más de 63 días sale como «Sin movimiento». | Se queda así (información). |

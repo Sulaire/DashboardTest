@@ -11,8 +11,9 @@ firmarlo).
 - **Qué guarda el panel:** avisos con un código de cliente (no su nombre),
   si fue bien o no, una frase corta y recuentos (cuántas facturas, cuántas
   por revisar, cuántas enviadas). Además, el correo de las personas de la
-  gestoría que entran al panel y, mientras tienen la sesión abierta (30 días
-  como mucho), la IP y el navegador desde el que entraron.
+  gestoría que entran al panel y, mientras tienen la sesión abierta (caduca a
+  los 30 días sin usarla), la IP y el navegador desde el que entraron. Las
+  sesiones caducadas y los enlaces de entrar caducados se borran solos.
 - **Qué no guarda:** ni facturas, ni importes, ni nombres o datos de los
   clientes de la gestoría. Las facturas siguen en el Drive o el correo del
   cliente.

@@ -19,5 +19,8 @@ export async function entrar(page: Page, correo: string) {
   await page.getByLabel("Tu correo").fill(correo);
   await page.getByRole("button", { name: /Mandarme el enlace/ }).click();
   await expect(page.getByRole("status")).toContainText("te acaba de llegar un enlace");
+  // El enlace lleva a una página con un botón (para que los escáneres de correo no lo gasten).
   await page.goto(await enlaceDe(correo));
+  await expect(page.getByRole("heading", { name: "Entrar a tu panel" })).toBeVisible();
+  await page.getByRole("button", { name: "Entrar" }).click();
 }

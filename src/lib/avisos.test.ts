@@ -48,6 +48,27 @@ test("rechaza datos personales e importes en el texto", () => {
     "Escribe a ana (at) gmail.com",
     "ana arroba gmail punto com",
     "Llama al 61/23/4567 o al 12/34/5678",
+    // Los de la segunda auditoría (25-10-2026):
+    "Llama al 612 - 345 - 678",
+    "Llama al 612 / 345 / 678",
+    "Llama al 612\u2066345\u2069678",
+    "Llama al 6\u034F1\u034F2\u034F3\u034F4\u034F5\u034F6\u034F7\u034F8",
+    "Llama al 612\u3164345\u3164678",
+    "Llama al ٦١٢٣٤٥٦٧٨",
+    "ana @ gmail.com",
+    "ana@gmail",
+    "ana{at}gmail.com",
+    "ana<at>gmail.com",
+    "ana at gmail dot com",
+    "Total 79eur",
+    "Total 79EUROS",
+    "Total 79'03",
+    "Total 79 , 03",
+    "Total 1500 pts",
+    "Son 1500 pesetas",
+    "Total 79₹",
+    "Mira https://drive.google.com/file/d/abc",
+    "Mira www.ejemplo.es",
   ])
     assert.ok("error" in limpiarAviso({ ...base, texto }, buzon), texto);
   assert.ok("error" in limpiarAviso({ ...base, texto: "Total 120,50" }, buzon));
@@ -70,7 +91,10 @@ test("las fechas y horas no se confunden con teléfonos", () => {
 test("un código no puede ser un DNI, NIE, CIF ni teléfono", () => {
   for (const cliente of ["12345678Z", "X1234567L", "B12345678", "612345678", "1234567"])
     assert.ok("error" in limpiarAviso({ ...base, cliente }, buzon), cliente);
-  for (const cliente of ["017", "C-023", "cliente_7", "BAR01"]) assert.ok("aviso" in limpiarAviso({ ...base, cliente }, buzon), cliente);
+  for (const cliente of ["017", "C-023", "BAR01", "A-7", "123456"]) assert.ok("aviso" in limpiarAviso({ ...base, cliente }, buzon), cliente);
+  // Los de la segunda auditoría (25-10-2026): con separadores, o un nombre con una cifra.
+  for (const cliente of ["612-345-678", "612.34.56.78", "12.345.678-Z", "6_1_2_3_4_5_6_7_8", "garcia.lopez.7", "cliente_7", "x".repeat(17)])
+    assert.ok("error" in limpiarAviso({ ...base, cliente }, buzon), cliente);
   // Sin ninguna cifra, es un nombre (como el id_negocio de la v3).
   for (const cliente of ["BARDEEJEMPLO", "ana.garcia"]) assert.ok("error" in limpiarAviso({ ...base, cliente }, buzon), cliente);
 });
@@ -83,6 +107,19 @@ test("las cifras heredadas de los objetos de JavaScript no cuelan", () => {
 test("el texto se guarda normalizado y sin invisibles", () => {
   const r = limpiarAviso({ ...base, texto: "１２ facturas\u200B archivadas" }, buzon);
   assert.ok("aviso" in r && r.aviso.texto === "12 facturas archivadas");
+});
+
+test("caracteres de control: 400 (antes, el nulo daba 500 en Postgres)", () => {
+  for (const texto of ["Hola\u0000mundo", "Campana\u0007", "Escape \u001b[31mrojo"])
+    assert.ok("error" in limpiarAviso({ ...base, texto }, buzon), JSON.stringify(texto));
+  // Un salto de línea o un tabulador sí valen (se convierten en espacios).
+  assert.ok("aviso" in limpiarAviso({ ...base, texto: "3 facturas\narchivadas" }, buzon));
+});
+
+test("una cifra no puede esconder un teléfono ni un DNI", () => {
+  assert.ok("error" in limpiarAviso({ ...base, cifras: { facturas: 612345678 } }, buzon));
+  assert.ok("error" in limpiarAviso({ ...base, cifras: { facturas: 1_000_000 } }, buzon));
+  assert.ok("aviso" in limpiarAviso({ ...base, cifras: { facturas: 999_999 } }, buzon));
 });
 
 test("las cifras son recuentos declarados por el producto", () => {

@@ -21,7 +21,9 @@ n8n (buzón de facturas) ──POST /api/avisos──▶  panel  ◀── la ge
 
 1. La persona escribe su correo en `/entrar`.
 2. Si tiene cuenta, Better Auth le manda un enlace que vale 15 minutos y una
-   sola vez. Si no tiene, no se manda nada, pero la pantalla dice lo mismo:
+   sola vez. El enlace lleva a `/entrar/confirmar`, una página con el botón
+   «Entrar»: los correos de empresa suelen tener un programa que abre los
+   enlaces antes que la persona, y sin ese paso gastaría el enlace. Si no tiene, no se manda nada, pero la pantalla dice lo mismo:
    así nadie puede averiguar quién es cliente, ni usar el formulario para
    mandar correos a cualquiera.
 3. Al abrir el enlace queda dentro 30 días (cookie de sesión).

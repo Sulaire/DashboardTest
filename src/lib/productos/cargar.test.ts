@@ -49,4 +49,6 @@ test("a la carta: los bloques elegidos, en el orden del producto", () => {
   const p = cargarProductos().productos.get("buzon-facturas")!;
   assert.equal(bloquesElegidos(p, null).length, p.bloques.length);
   assert.deepEqual(bloquesElegidos(p, ["avisos", "estado"]).map((b) => b.id), ["estado", "avisos"]);
+  // Si un bloque elegido ya no existe (le cambiaron el id), la pestaña no se queda vacía.
+  assert.equal(bloquesElegidos(p, ["bloque-que-ya-no-existe"]).length, p.bloques.length);
 });

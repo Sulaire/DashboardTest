@@ -16,31 +16,44 @@ import type { Producto } from "@/lib/productos/tipos";
 export type AvisoNuevo = { codigo: string | null; ok: boolean; texto: string; cifras: Record<string, number> };
 
 export const TEXTO_MAXIMO = 160;
-const CODIGO = /^[A-Za-z0-9._-]{1,32}$/;
-const MAXIMO_CIFRA = 1_000_000_000;
+/**
+ * Un código: corto, sin espacios, de 1 a 6 cifras y como mucho 4 letras
+ * («017», «C-023», «BAR01»). Así no cabe ni un nombre («garcia.lopez.7») ni
+ * un teléfono o un DNI, aunque vayan con puntos o guiones.
+ */
+const CODIGO = /^[A-Za-z0-9._-]{1,16}$/;
+/** Un recuento: hasta 999.999. Más no hace falta, y así no cabe un teléfono ni un DNI disfrazado de cifra. */
+const MAXIMO_CIFRA = 999_999;
 
 /**
  * Antes de mirar, el texto se pasa a su forma normal (NFKC): así los dígitos
  * «de ancho completo» (６１２…) o la arroba ＠ se convierten en los de siempre
- * y no se cuelan. Y se quitan los caracteres invisibles que podrían partir un
+ * y no se cuelan. Y se quitan los caracteres invisibles (todos los que Unicode
+ * marca como «ignorables», más el relleno coreano) que podrían partir un
  * número para que no se reconozca.
  */
-const INVISIBLES = /[\u00AD\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF]/g;
+const INVISIBLES = /[\p{Default_Ignorable_Code_Point}\u3164\uFFA0\u115F\u1160]/gu;
 export const normalizar = (texto: string) => texto.normalize("NFKC").replace(INVISIBLES, "");
+
+/** Caracteres de control (nulo, escape, campana…): no tienen sitio en una frase, y el nulo ni cabe en Postgres. */
+const CONTROL = /[\p{Cc}]/u;
+/** Cifras que no son las de siempre (árabes, devanagari…): NFKC no las convierte, así que no se aceptan. */
+const OTRAS_CIFRAS = /(?![0-9])\p{Nd}/u;
 
 /**
  * Siete cifras o más seguidas, aunque vayan separadas por espacios, puntos,
- * guiones o barras (hasta dos caracteres entre una y otra): un teléfono, un DNI,
- * una cuenta… En un aviso no hace falta ningún número tan largo.
+ * guiones o barras (hasta tres caracteres entre una y otra): un teléfono, un
+ * DNI, una cuenta… En un aviso no hace falta ningún número tan largo.
  */
-const NUMERO_LARGO = /\d(?:[^\p{L}\d]{0,2}\d){6,}/u;
+const NUMERO_LARGO = /\d(?:[^\p{L}\d]{0,3}\d){6,}/u;
 
 /** Lo que huele a dato personal o a dinero. Cada uno con su explicación. */
 const PROHIBIDO: [RegExp, string][] = [
-  [/[^\s@]+@[^\s@]+\.[^\s@]+|[([]\s*at\s*[)\]]|\barroba\b/i, "parece un correo"],
+  [/@|[([{<]\s*at\s*[)\]}>]|\barroba\b|\b(?:dot|punto)\s+(?:com|es|net|org|eu)\b/i, "parece un correo"],
+  [/https?:\/\/|\bwww\.|\b[a-z0-9-]+\.(?:com|es|net|org|eu)\/\S/i, "lleva una dirección web"],
   [NUMERO_LARGO, "tiene un número largo (teléfono, DNI, cuenta…)"],
-  [/[€$£¥]|\b(?:eur|euros?|usd|gbp|d[oó]lar(?:es)?|libras?)\b/i, "parece un importe"],
-  [/\d[.,]\d{2}(?!\d)/, "parece un importe (un número con céntimos)"],
+  [/\p{Sc}|(?<!\p{L})(?:eur|euros?|usd|gbp|d[oó]lar(?:es)?|libras?|pts|pesetas?)(?!\p{L})/iu, "parece un importe"],
+  [/\d\s*[.,'’]\s*\d{2}(?!\d)/, "parece un importe (un número con céntimos)"],
 ];
 
 /**
@@ -60,11 +73,17 @@ function quitarFechas(texto: string): string {
   });
 }
 
-/**
- * Un código no puede ser un DNI, NIE, CIF o teléfono (aunque sus caracteres
- * valgan): se reconoce por la forma, y cualquier código de 7 cifras o más.
- */
-const CODIGO_PROHIBIDO = /^\d{8}[A-Za-z]$|^[XYZxyz]\d{7}[A-Za-z]$|^[A-HJNP-SUVWa-hjnp-suvw]\d{7}[0-9A-Ja-j]$|\d{7,}/;
+/** Por qué un código no vale, o null si vale. */
+export function motivoCodigo(c: string): string | null {
+  if (!CODIGO.test(c)) return "'cliente' es un código corto (letras, números, . _ -), nunca un nombre.";
+  const cifras = c.replace(/\D/g, "").length;
+  const letras = c.replace(/[^A-Za-z]/g, "").length;
+  if (cifras === 0)
+    return "'cliente' tiene que llevar al menos una cifra (p. ej. el número de cliente de la gestoría): un nombre no vale.";
+  if (cifras > 6) return "'cliente' tiene demasiadas cifras: parece un DNI, NIE, CIF o teléfono. Usa el número de cliente de la gestoría.";
+  if (letras > 4) return "'cliente' tiene demasiadas letras: parece un nombre. Usa un código como «017» o «C-023».";
+  return null;
+}
 
 export function limpiarAviso(
   cuerpo: Record<string, unknown>,
@@ -76,22 +95,21 @@ export function limpiarAviso(
   let codigo: string | null = null;
   if (cuerpo.cliente !== undefined && cuerpo.cliente !== null && cuerpo.cliente !== "") {
     const c = typeof cuerpo.cliente === "number" ? String(cuerpo.cliente) : cuerpo.cliente;
-    if (typeof c !== "string" || !CODIGO.test(c))
-      return { error: "'cliente' es un código corto (letras, números, . _ -), nunca un nombre." };
-    // Un código lleva al menos una cifra: así un nombre («BARDEEJEMPLO», «ana.garcia») no pasa por código.
-    if (!/\d/.test(c))
-      return { error: "'cliente' tiene que llevar al menos una cifra (p. ej. el número de cliente de la gestoría): un nombre no vale." };
-    if (CODIGO_PROHIBIDO.test(c))
-      return { error: "'cliente' parece un DNI, NIE, CIF o teléfono: usa el número de cliente de la gestoría, no un dato suyo." };
+    if (typeof c !== "string") return { error: "'cliente' es un código corto (letras, números, . _ -), nunca un nombre." };
+    const motivo = motivoCodigo(c);
+    if (motivo) return { error: motivo };
     codigo = c;
   }
 
   if (typeof cuerpo.ok !== "boolean") return { error: "'ok' tiene que ser true o false." };
 
   if (typeof cuerpo.texto !== "string") return { error: "'texto' tiene que ser una frase corta." };
+  if (CONTROL.test(cuerpo.texto.replace(/[\t\n\r]/g, " ")))
+    return { error: "'texto' lleva caracteres de control (como el nulo): solo una frase normal." };
   const texto = normalizar(cuerpo.texto).replace(/\s+/g, " ").trim();
   if (!texto) return { error: "'texto' no puede ir vacío." };
   if (texto.length > TEXTO_MAXIMO) return { error: `'texto' como mucho ${TEXTO_MAXIMO} caracteres.` };
+  if (OTRAS_CIFRAS.test(texto)) return { error: "'texto' lleva cifras que no son 0-9: escribe los números con las de siempre." };
   const sinFechas = quitarFechas(texto);
   for (const [patron, motivo] of PROHIBIDO)
     if (patron.test(sinFechas)) return { error: `'texto' ${motivo}: aquí no van datos personales ni importes.` };
@@ -103,7 +121,7 @@ export function limpiarAviso(
       if (!Object.hasOwn(esperado.cifras, clave))
         return { error: `La cifra '${clave}' no existe en ${esperado.id}. Las que hay: ${Object.keys(esperado.cifras).join(", ")}.` };
       if (!Number.isInteger(valor) || (valor as number) < 0 || (valor as number) > MAXIMO_CIFRA)
-        return { error: `La cifra '${clave}' tiene que ser un número entero (un recuento, no un importe).` };
+        return { error: `La cifra '${clave}' tiene que ser un número entero entre 0 y ${MAXIMO_CIFRA.toLocaleString("es-ES")} (un recuento, no un importe).` };
       cifras[clave] = valor as number;
     }
   }

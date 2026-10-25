@@ -450,7 +450,7 @@ g) Avisar al encargado de cualquier solicitud o incidente que conozca y afecte
 |---|---|---|---|
 | Avisos del panel (código, sí o no, frase corta, recuentos) | Panel (Railway) | **12 meses** desde que llegan | Solos, de forma automática |
 | Correos de las personas con acceso | Panel | Mientras tengan acceso | Al quitarles el acceso o al dar de baja a la gestoría |
-| IP y navegador de cada sesión | Panel | Mientras la sesión sigue abierta: caduca a los 30 días (y se renueva si se usa) | Al caducar [CONFIRMAR que la fila se borra], al quitar la cuenta o con la baja |
+| IP y navegador de cada sesión | Panel | Mientras la sesión sigue abierta: caduca a los 30 días (y se renueva si se usa) | Al caducar se borra sola (la limpieza de `src/lib/retencion.ts`, comprobada con una prueba), y también al quitar la cuenta o con la baja |
 | Enlaces para entrar | Panel (solo su huella) | 15 minutos, un solo uso | Caducan |
 | Llaves del buzón | Panel (solo su huella) | Hasta que se cambian o se da de baja a la gestoría | Con la baja |
 | PDF de las facturas | Carpeta de Drive (DECISIÓN 2) | [PLAZO DE CONSERVACIÓN EN DRIVE Y HOJA] | Cláusula 5.11 |

@@ -19,6 +19,9 @@ import type { Bloque, Color, Producto } from "@/lib/productos/tipos";
  * Un bloque nuevo se añade aquí y desde entonces sirve para todos.
  */
 
+/** Como mucho, cuántos renglones enseña la lista (los de «Revisar», siempre arriba). */
+const FILAS_MAXIMAS = 300;
+
 const ESTADO_FILA: Record<Fila["estado"], { color: Color; texto: string }> = {
   bien: { color: "verde", texto: "Bien" },
   revisar: { color: "ambar", texto: "Revisar" },
@@ -177,7 +180,7 @@ function Lista({ bloque, producto, avisos, ahora, historial }: Props & { bloque:
             </tr>
           </thead>
           <tbody>
-            {renglones.map((f) => (
+            {renglones.slice(0, FILAS_MAXIMAS).map((f) => (
               <tr key={f.codigo} className="border-b border-borde last:border-0">
                 <td className="py-2 pr-4 font-mono font-medium">{f.codigo}</td>
                 <td className="py-2 pr-4">
@@ -194,6 +197,11 @@ function Lista({ bloque, producto, avisos, ahora, historial }: Props & { bloque:
           </tbody>
         </table>
       </div>
+      {renglones.length > FILAS_MAXIMAS && (
+        <p className="mt-3 text-sm text-texto-suave">
+          Y {renglones.length - FILAS_MAXIMAS} más que no caben aquí (los que hay que revisar van siempre arriba).
+        </p>
+      )}
     </Caja>
   );
 }

@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { config } from "@/lib/config";
 import { mandarEnlace } from "@/lib/correo";
+import { enlaceDeConfirmacion } from "@/lib/enlace";
 import { consultaApp, poolApp } from "@/lib/db";
 import { crearLimite } from "@/lib/limite";
 
@@ -29,7 +30,8 @@ function mandarEnSegundoPlano(email: string, url: string): void {
     try {
       const correo = email.toLowerCase();
       if (!enlacesPorCorreo(correo)) return;
-      if (await existeCuenta(correo)) await mandarEnlace(correo, url);
+      // El correo lleva a la página de confirmar, no al enlace de un solo uso (src/lib/enlace.ts).
+      if (await existeCuenta(correo)) await mandarEnlace(correo, enlaceDeConfirmacion(url, config.url ?? url));
     } catch (e) {
       console.error("No se pudo mandar el enlace de entrada:", e);
     }
