@@ -50,3 +50,11 @@ producción; volvió a pasar sin ella. La causa de verdad: haber hecho
 lo que deja el build confunde a la recarga en caliente. Probado: con `.next`
 borrado, la misma página carga una vez y se queda quieta. Apuntado en
 `CLAUDE.md` («Arrancar en tu ordenador»).
+
+## La receta de n8n y los días sin correo (25-10-2026)
+
+Lo vio el agente que escribió el contrato y la guía: el disparador de Gmail de
+la ingesta (04) solo arranca cuando llega correo. El aviso de «sigo vivo»
+cada 12 horas que proponía `docs/N8N_BUZON.md` no saldría en días sin
+facturas, y el panel se pondría en rojo a las 48 horas sin motivo. Arreglo:
+el «sigo vivo» sale del 05 Alerta de Latido, que tiene horario (paso 1b).

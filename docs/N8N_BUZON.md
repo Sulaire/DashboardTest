@@ -55,6 +55,7 @@ try { nuevasPanel = $('Registrar Revision').all().map(function (x) { return x.js
 var avisosPanel = panelAvisosRevision(codigoPanel, nuevasPanel);
 var pendientesPanel = panelPendientes(revisionPanel, cfgPanel.id_negocio);
 // Solo si cambió algo o hace 12 h del último: así no llegan 24 avisos al día por negocio.
+// (Ojo: la ingesta solo corre cuando llega correo; el aviso diario «sigo vivo» sale del 05, paso 1b.)
 if (panelDebeMandarPasada($getWorkflowStaticData('global'), codigoPanel, archivadasPanel, pendientesPanel, Date.now()))
   avisosPanel.push(panelAvisoPasada(codigoPanel, archivadasPanel, pendientesPanel));
 return avisosPanel.map(function (a) { return { json: a }; });
@@ -69,6 +70,40 @@ return avisosPanel.map(function (a) { return { json: a }; });
 Ojo con los nombres: `Registrar Factura` y `Registrar Revision` solo tienen
 items si en esa pasada se escribió algo; el `try` lo cubre. Si los nodos se
 llaman distinto en el servidor, se cambian los nombres en el cuerpo.
+
+## 1b. Un aviso diario aunque no llegue nada (en el 05)
+
+La ingesta (04) solo arranca cuando **llega un correo**: el disparador de
+Gmail no hace nada si no hay correo nuevo. Un negocio que pasa dos días sin
+facturas (un fin de semana largo) no mandaría ningún aviso y el panel se
+pondría en rojo («sin noticias del buzón») sin motivo. Por eso el aviso de
+«sigo vivo» sale de un flujo con horario: el **05 Alerta de Latido**, que ya
+corre cada mañana.
+
+Al final del 05, el mismo patrón de antes («Una Vez» → leer `Negocios` y
+`Revision` → Code → HTTP «Mandar al Panel», con «On Error: Continue»), con
+este cuerpo detrás de `aviso_panel.js`:
+
+```js
+// Cuerpo de «Latido Panel» en el 05: un aviso al día por negocio, haya o no facturas.
+var cfgLatido = $('CONFIG').first().json;
+var negocioLatido = {};
+try {
+  var negsL = $('Leer Negocio').all();
+  for (var iL = 0; iL < negsL.length; iL++)
+    if (String(negsL[iL].json.id_negocio) === String(cfgLatido.id_negocio)) negocioLatido = negsL[iL].json;
+} catch (e) {}
+var codigoLatido = panelCodigo(negocioLatido);
+if (!codigoLatido) return [];
+var revisionLatido = [];
+try { revisionLatido = $('Leer Revision Panel').all().map(function (x) { return x.json || {}; }); } catch (e) {}
+return [{ json: panelAvisoPasada(codigoLatido, 0, panelPendientes(revisionLatido, cfgLatido.id_negocio)) }];
+```
+
+Así el panel recibe noticias al menos una vez al día (el rojo salta a las 48
+horas), y las pendientes se ponen al día aunque no llegue nada (si la
+gestoría resolvió una factura en la hoja, el ámbar se apaga a la mañana
+siguiente).
 
 ## 2. Envío a la gestoría (06)
 
@@ -92,7 +127,10 @@ return [{ json: panelAvisoGeneral(false, 'credencial') }];  // en el 03, cuando 
 ## 4. Comprobarlo
 
 - [ ] Lanzar la ingesta a mano y mirar en `/admin` → el buzón → «Últimos
-      avisos recibidos».
+      avisos recibidos». También se puede probar cada aviso antes, sin
+      guardarlo, en `/admin` → «Probar un aviso».
+- [ ] Lanzar el 05 a mano: tiene que llegar «Sin facturas nuevas» con sus
+      pendientes.
 - [ ] Abrir el panel con «Ver su panel»: el semáforo y las cifras.
 - [ ] Si algo no llega: el nodo HTTP devuelve el motivo en `error` (400) o
       dice que la llave no vale (401).

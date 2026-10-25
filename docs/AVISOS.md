@@ -67,6 +67,7 @@ aviso fue bueno»: cada pasada manda **cuántas quedan por revisar ahora**
 |---|---|
 | Ingesta (04), al acabar cada pasada de un negocio (junto a `Resumen` → `Avisar Telegram`) | `cliente: codigo_panel`, `ok: true`, `texto: "3 facturas archivadas"`, `cifras: { "facturas": 3, "pendientes": 1 }` |
 | Ingesta (04), por cada fila **nueva** de `Revision` que no sea un descarte | `cliente: codigo_panel`, `ok: false`, `texto` según el motivo (abajo), sin cifras |
+| Alerta de Latido (05), cada mañana, por negocio | `cliente: codigo_panel`, `ok: true`, `texto: "Sin facturas nuevas"`, `cifras: { "facturas": 0, "pendientes": 1 }` (el «sigo vivo») |
 | Envío a la gestoría (06, el día 3 de cada mes) | `cliente: codigo_panel`, `ok: true`, `texto: "Envío mensual a la gestoría hecho"`, `cifras: { "enviadas": 6 }` |
 | Notificador de errores (02) | sin `cliente`, `ok: false`, `texto: "El buzón ha tenido un error y se está revisando"` |
 | Canario (03), si cae una credencial | sin `cliente`, `ok: false`, `texto: "El buzón no puede leer el correo ahora mismo: se está arreglando"` |
@@ -78,10 +79,12 @@ El código exacto para los nodos de n8n, con pruebas, está en
 `integraciones/n8n/aviso_panel.js`, y los pasos en `docs/N8N_BUZON.md`.
 
 No hace falta mandar el aviso de la Ingesta cada hora: basta cuando archiva
-algo, cuando cambian las pendientes y, aunque no pase nada, uno cada 12 horas
-con `facturas: 0` para que el panel sepa que el buzón sigue vivo (si pasa
-`silencio_horas` sin noticias, el semáforo se pone rojo). El código de
-`integraciones/n8n/aviso_panel.js` ya lo hace (`panelDebeMandarPasada`).
+algo o cuando cambian las pendientes (el código de
+`integraciones/n8n/aviso_panel.js` ya lo hace, `panelDebeMandarPasada`). Pero
+la ingesta solo corre cuando **llega correo**: el aviso de «sigo vivo»
+(`facturas: 0` con las pendientes de ese momento) tiene que salir de un flujo
+con horario, el 05 Alerta de Latido, una vez al día (docs/N8N_BUZON.md, paso
+1b). Si pasan `silencio_horas` (48) sin noticias, el semáforo se pone rojo.
 
 ### Motivos que esperan a alguien (cuentan en `pendientes`)
 

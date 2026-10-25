@@ -78,8 +78,9 @@ function panelAvisoPasada(codigo, archivadas, pendientes) {
 }
 
 // Si toca mandar el aviso de la pasada: cuando archivó algo, cuando cambian las
-// pendientes, o si hace más de 12 horas del último (para que el panel sepa que
-// el buzón sigue vivo; se pone rojo a las 48 h sin noticias). Así llegan unos
+// pendientes, o si hace más de 12 horas del último. Ojo: la ingesta solo corre
+// cuando llega correo, así que el «sigo vivo» de verdad lo manda el 05 cada
+// mañana (docs/N8N_BUZON.md, paso 1b); el panel se pone rojo a las 48 h sin noticias. Así llegan unos
 // pocos avisos al día por negocio en vez de 24, y el panel cuenta deprisa.
 // `estado` es $getWorkflowStaticData('global'), que n8n guarda entre
 // ejecuciones de producción (no en las de prueba a mano: ahí siempre manda).
