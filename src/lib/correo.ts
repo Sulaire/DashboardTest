@@ -1,4 +1,5 @@
 import { config, enProduccion } from "@/lib/config";
+import { correoEnlace } from "@/lib/correo-plantilla";
 
 /**
  * El correo con el enlace para entrar. Lo manda Resend (tomado prestado: el
@@ -11,14 +12,16 @@ export async function mandarEnlace(correo: string, enlace: string): Promise<void
     console.log(`\n[Sin Resend] Enlace para entrar de ${correo}:\n${enlace}\n`);
     return;
   }
+  const { asunto, texto, html } = correoEnlace(enlace);
   const respuesta = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${config.resendClave}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       from: config.correoDe,
       to: [correo],
-      subject: "Tu enlace para entrar al panel",
-      text: `Hola:\n\nPara entrar a tu panel, abre este enlace (vale 15 minutos y solo una vez):\n\n${enlace}\n\nSi no lo has pedido tú, no hagas nada: sin el enlace nadie puede entrar.\n`,
+      subject: asunto,
+      text: texto,
+      html,
     }),
     signal: AbortSignal.timeout(10_000),
   });

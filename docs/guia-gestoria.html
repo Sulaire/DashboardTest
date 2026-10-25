@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tu panel: cómo funciona · Panel de clientes</title>
+<style>
+  /*
+   * Guía para la gestoría. Un solo archivo, sin nada de fuera: se abre sin
+   * internet y se imprime bien en A4. Los colores son los mismos que los del
+   * panel (src/app/globals.css). Verde, ámbar y rojo solo para el semáforo, y
+   * siempre con su palabra y su símbolo al lado: el color nunca va solo.
+   */
+  :root {
+    color-scheme: light;
+    --fondo: #f6f7f9;
+    --superficie: #ffffff;
+    --superficie-2: #eef0f4;
+    --borde: #dde1e8;
+    --texto: #161a22;
+    --texto-suave: #4a5262;
+    --acento: #3550c8;
+    --sobre-acento: #ffffff;
+    --verde: #17804f;
+    --verde-fondo: #e3f4ea;
+    --ambar: #8f5b00;
+    --ambar-fondo: #fdf0d6;
+    --rojo: #b42323;
+    --rojo-fondo: #fbe4e4;
+    --gris: #5c6475;
+    --gris-fondo: #eceef2;
+    --sobre-luz: #ffffff;
+    --hueco: #e8ecff;
+    --carcasa: #20252e;
+    --luz-roja: #e5484d;
+    --luz-ambar: #f2b248;
+    --luz-verde: #30a46c;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --fondo: #0f1217;
+      --superficie: #171b22;
+      --superficie-2: #20252e;
+      --borde: #2c323d;
+      --texto: #e9ecf1;
+      --texto-suave: #aab2c0;
+      --acento: #8fa2ff;
+      --sobre-acento: #0f1217;
+      --verde: #4fd08f;
+      --verde-fondo: #12301f;
+      --ambar: #f2b248;
+      --ambar-fondo: #33270f;
+      --rojo: #ff7b7b;
+      --rojo-fondo: #3a1717;
+      --gris: #a3abba;
+      --gris-fondo: #232833;
+      --sobre-luz: #0f1217;
+      --hueco: #252b4a;
+      --carcasa: #0a0c10;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .pagina {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 16px 3rem;
+  }
+
+  a { color: var(--acento); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; border-radius: 2px; }
+
+  h1, h2, h3 { line-height: 1.25; margin: 0; }
+  h2 { font-size: 1.3rem; margin-bottom: .75rem; }
+  h3 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; }
+  p { margin: 0 0 .75rem; }
+  ul, ol { margin: 0 0 .75rem; padding-left: 1.25rem; }
+  li + li { margin-top: .3rem; }
+  strong { font-weight: 650; }
+
+  .suave { color: var(--texto-suave); }
+
+  /* Huecos que hay que rellenar antes de mandar la guía. */
+  .hueco {
+    background: var(--hueco);
+    border-bottom: 1px dashed var(--acento);
+    padding: 0 .2em;
+    border-radius: 3px;
+  }
+
+  /* ---------- Cabecera ---------- */
+  .cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .marca {
+    font-size: .85rem;
+    font-weight: 650;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--texto-suave);
+    margin-bottom: .4rem;
+  }
+  h1 { font-size: 2rem; letter-spacing: -.01em; }
+  .entradilla { font-size: 1.1rem; color: var(--texto-suave); margin: .6rem 0 0; }
+  .para { font-size: .9rem; color: var(--texto-suave); margin-top: .6rem; }
+
+  /* El semáforo pequeño de la cabecera: solo adorno. */
+  .semaforo-mini {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    background: var(--carcasa);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+  }
+  .semaforo-mini span { display: block; width: 20px; height: 20px; border-radius: 50%; }
+  .semaforo-mini .r { background: var(--luz-roja); }
+  .semaforo-mini .a { background: var(--luz-ambar); }
+  .semaforo-mini .v { background: var(--luz-verde); }
+
+  /* ---------- Índice ---------- */
+  .indice {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .indice h2 { font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-suave); margin-bottom: .5rem; }
+  .indice ol { columns: 2; column-gap: 2rem; margin: 0; }
+  .indice li { break-inside: avoid; }
+
+  /* ---------- Secciones ---------- */
+  section.bloque {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 1.5rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .num {
+    display: inline-block;
+    min-width: 1.6em;
+    color: var(--acento);
+  }
+
+  /* Pasos para entrar */
+  ol.pasos { list-style: none; padding: 0; counter-reset: paso; }
+  ol.pasos li {
+    counter-increment: paso;
+    position: relative;
+    padding-left: 2.6rem;
+    min-height: 2rem;
+  }
+  ol.pasos li + li { margin-top: .75rem; }
+  ol.pasos li::before {
+    content: counter(paso);
+    position: absolute;
+    left: 0;
+    top: -.1rem;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 50%;
+    background: var(--acento);
+    color: var(--sobre-acento);
+    font-weight: 650;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nota {
+    background: var(--superficie-2);
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    margin-top: 1rem;
+  }
+  .nota > :last-child { margin-bottom: 0; }
+  .nota h3 { margin-top: 0; font-size: 1rem; }
+
+  /* ---------- Maqueta del panel (ejemplo) ---------- */
+  figure.maqueta { margin: 0 0 1.25rem; }
+  .pantalla {
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    background: var(--fondo);
+    overflow: hidden;
+  }
+  .pantalla-barra {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem .9rem;
+    background: var(--superficie);
+    border-bottom: 1px solid var(--borde);
+    font-size: .8rem;
+  }
+  .pantalla-barra b { font-weight: 650; }
+  .pantalla-cuerpo { padding: .9rem; display: grid; gap: .7rem; }
+  .p-semaforo {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    background: var(--ambar-fondo);
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    padding: .8rem .9rem;
+  }
+  .p-semaforo .luz { width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--ambar); flex: none; }
+  .p-titulo { font-size: .68rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-suave); }
+  .p-frase { font-weight: 650; color: var(--ambar); font-size: .95rem; line-height: 1.3; }
+  .p-cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+  .p-cifra { background: var(--superficie); border: 1px solid var(--borde); border-radius: 8px; padding: .55rem .65rem; }
+  .p-cifra span { display: block; font-size: .7rem; color: var(--texto-suave); line-height: 1.25; }
+  .p-cifra strong { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; margin-top: .15rem; }
+  .p-lista { background: var(--superficie); border: 1px solid var(--borde); border-radius: 8px; padding: .3rem .7rem; font-size: .8rem; }
+  .p-fila { display: grid; grid-template-columns: 3.5rem 1fr auto; gap: .5rem; align-items: center; padding: .35rem 0; }
+  .p-fila + .p-fila { border-top: 1px solid var(--borde); }
+  .p-fila code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-weight: 650; }
+  .p-fila .cuantas { color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+  .estado-fila { display: inline-flex; align-items: center; gap: .4rem; }
+  .punto { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; flex: none; }
+  .punto.verde { background: var(--verde); }
+  .punto.ambar { background: var(--ambar); }
+  .punto.gris { background: var(--gris); }
+  figcaption { font-size: .85rem; color: var(--texto-suave); margin-top: .5rem; }
+
+  /* ---------- Los cuatro colores ---------- */
+  ul.estados { list-style: none; padding: 0; display: grid; gap: .6rem; }
+  ul.estados li { margin: 0; }
+  .estado {
+    display: grid;
+    grid-template-columns: 2.2rem 1fr;
+    gap: .8rem;
+    align-items: start;
+    border-radius: 10px;
+    padding: .8rem .9rem;
+    border: 1px solid var(--borde);
+  }
+  .estado.verde { background: var(--verde-fondo); }
+  .estado.ambar { background: var(--ambar-fondo); }
+  .estado.rojo { background: var(--rojo-fondo); }
+  .estado.gris { background: var(--gris-fondo); }
+  .lampara {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sobre-luz);
+    font-weight: 800;
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+  .verde .lampara { background: var(--verde); }
+  .ambar .lampara { background: var(--ambar); }
+  .rojo .lampara { background: var(--rojo); }
+  .gris .lampara { background: var(--gris); }
+  .estado p { margin: 0; }
+  .estado .nombre { font-weight: 700; }
+  .estado .frase { font-style: italic; }
+  .estado .hacer { margin-top: .3rem; }
+
+  /* ---------- Cifras explicadas ---------- */
+  dl.cifras { margin: 0; display: grid; gap: .6rem; }
+  dl.cifras div { background: var(--superficie-2); border-radius: 10px; padding: .7rem .9rem; }
+  dl.cifras dt { font-weight: 650; }
+  dl.cifras dd { margin: .15rem 0 0; }
+
+  /* Estados de la lista de clientes */
+  ul.chapas { list-style: none; padding: 0; display: grid; gap: .5rem; }
+  ul.chapas li { margin: 0; display: grid; grid-template-columns: 11rem 1fr; gap: .75rem; align-items: baseline; }
+  .chapa {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    font-weight: 650;
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    border: 1px solid var(--borde);
+    background: var(--superficie);
+    white-space: nowrap;
+  }
+
+  /* ---------- Avisos ---------- */
+  .avisos { display: grid; gap: .7rem; }
+  .aviso {
+    border: 1px solid var(--borde);
+    border-left: 4px solid var(--ambar);
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    background: var(--superficie);
+  }
+  .aviso.general { border-left-color: var(--acento); }
+  .aviso h3 { margin: 0 0 .4rem; font-size: 1rem; }
+  .aviso p { margin: 0; }
+  .aviso p + p { margin-top: .35rem; }
+  .etiqueta { font-weight: 650; }
+
+  /* ---------- Lo que no hay ---------- */
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+  ul.no { list-style: none; padding: 0; }
+  ul.no li { position: relative; padding-left: 1.6rem; }
+  ul.no li::before {
+    content: "×";
+    position: absolute;
+    left: 0;
+    top: -.05rem;
+    font-weight: 800;
+    color: var(--texto-suave);
+  }
+  .caja-acento {
+    border: 1px solid var(--borde);
+    border-top: 4px solid var(--acento);
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    background: var(--superficie-2);
+  }
+  .caja-acento h3 { margin-top: 0; }
+  .caja-acento > :last-child { margin-bottom: 0; }
+
+  /* ---------- Privacidad ---------- */
+  ol.tres { list-style: none; padding: 0; display: grid; gap: .6rem; counter-reset: tres; }
+  ol.tres li {
+    margin: 0;
+    counter-increment: tres;
+    display: grid;
+    grid-template-columns: 2rem 1fr;
+    gap: .75rem;
+    align-items: baseline;
+    font-size: 1.05rem;
+  }
+  ol.tres li::before {
+    content: counter(tres);
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--acento);
+    text-align: right;
+  }
+
+  /* ---------- Contacto ---------- */
+  .contacto {
+    border: 2px solid var(--acento);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    margin-bottom: 1rem;
+  }
+  .contacto p { margin: 0; }
+  .contacto .quien { font-size: 1.2rem; font-weight: 700; margin-bottom: .35rem; }
+  .preguntas h3 { font-size: 1rem; margin: 1rem 0 .25rem; }
+
+  footer {
+    text-align: center;
+    font-size: .85rem;
+    color: var(--texto-suave);
+    margin-top: 1.5rem;
+  }
+
+  /* ---------- Pantallas estrechas ---------- */
+  @media (max-width: 600px) {
+    h1 { font-size: 1.6rem; }
+    .indice ol { columns: 1; }
+    .p-cifras { grid-template-columns: repeat(2, 1fr); }
+    .dos { grid-template-columns: 1fr; }
+    ul.chapas li { grid-template-columns: 1fr; gap: .25rem; }
+    section.bloque { padding: 1.25rem 1rem; }
+  }
+
+  /* ---------- Imprimir (A4, siempre en claro) ---------- */
+  @page { size: A4; margin: 15mm 14mm 16mm; }
+
+  @media print {
+    :root {
+      color-scheme: light;
+      --fondo: #ffffff;
+      --superficie: #ffffff;
+      --superficie-2: #f1f3f6;
+      --borde: #cfd4dc;
+      --texto: #000000;
+      --texto-suave: #3d4452;
+      --acento: #2a43b0;
+      --sobre-acento: #ffffff;
+      --verde: #17804f;
+      --verde-fondo: #e3f4ea;
+      --ambar: #8f5b00;
+      --ambar-fondo: #fdf0d6;
+      --rojo: #b42323;
+      --rojo-fondo: #fbe4e4;
+      --gris: #5c6475;
+      --gris-fondo: #eceef2;
+      --sobre-luz: #ffffff;
+      --hueco: #e8ecff;
+      --carcasa: #20252e;
+    }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-size: 10pt; line-height: 1.45; background: #ffffff; }
+    .pagina { max-width: none; padding: 0; }
+    h1 { font-size: 20pt; }
+    h2 { font-size: 13pt; }
+    section.bloque, .indice { border-radius: 0; border: 0; border-top: 1px solid var(--borde); padding: 10pt 0 4pt; margin: 0; }
+    h2, h3 { break-after: avoid; page-break-after: avoid; }
+    figure, .estado, .aviso, dl.cifras div, ul.chapas li, .caja-acento, .contacto, ol.pasos li, .nota { break-inside: avoid; page-break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+    .indice ol { columns: 2; }
+  }
+</style>
+</head>
+<body>
+<div class="pagina">
+
+  <header class="cabecera">
+    <div>
+      <p class="marca">Panel de clientes</p>
+      <h1>Tu panel: cómo funciona</h1>
+      <p class="entradilla">Qué es, cómo entrar y qué quiere decir cada cosa que ves.</p>
+      <p class="para">Guía para <span class="hueco">[NOMBRE DE LA GESTORÍA]</span> · <span class="hueco">[FECHA]</span></p>
+    </div>
+    <div class="semaforo-mini" aria-hidden="true"><span class="r"></span><span class="a"></span><span class="v"></span></div>
+  </header>
+
+  <nav class="indice" aria-labelledby="indice-titulo">
+    <h2 id="indice-titulo">En esta guía</h2>
+    <ol>
+      <li><a href="#que-es">Qué es el panel</a></li>
+      <li><a href="#entrar">Cómo entrar</a></li>
+      <li><a href="#que-ves">Qué ves</a></li>
+      <li><a href="#avisos">Los avisos más comunes</a></li>
+      <li><a href="#que-no-hay">Qué no hay en el panel</a></li>
+      <li><a href="#privacidad">Privacidad en tres líneas</a></li>
+      <li><a href="#contacto">A quién llamar</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <section class="bloque" id="que-es" aria-labelledby="t-que-es">
+      <h2 id="t-que-es"><span class="num">1.</span>Qué es el panel</h2>
+      <p>Es una página web privada donde ves cómo va tu <strong>buzón de facturas</strong>: el sistema que recoge las facturas que llegan al correo de cada uno de tus clientes, las guarda ordenadas y te las manda una vez al mes.</p>
+      <p>De un vistazo te dice tres cosas:</p>
+      <ul>
+        <li><strong>Si el buzón está funcionando.</strong></li>
+        <li><strong>Qué ha hecho este mes:</strong> cuántas facturas ha archivado y cuándo fue el último envío.</li>
+        <li><strong>Qué hay que revisar,</strong> y de qué cliente.</li>
+      </ul>
+      <p>No cambia nada de lo que ya tienes: las facturas siguen guardándose en Google Drive y siguen llegándote cada mes. El panel solo te enseña cómo va todo.</p>
+    </section>
+
+    <section class="bloque" id="entrar" aria-labelledby="t-entrar">
+      <h2 id="t-entrar"><span class="num">2.</span>Cómo entrar</h2>
+      <p>No hay contraseñas. Entras con un enlace que te llega al correo.</p>
+      <ol class="pasos">
+        <li>Abre <span class="hueco">[DIRECCIÓN DEL PANEL]</span> en tu navegador.</li>
+        <li>Escribe tu correo (el que nos diste para el panel) y pulsa <strong>«Mandarme el enlace»</strong>.</li>
+        <li>Te llega un correo con el asunto <strong>«Tu enlace para entrar al panel»</strong>. Ábrelo y pulsa el enlace.</li>
+        <li>Ya estás dentro. Ese navegador mantiene tu sesión abierta unos días (hasta 30), así que no tendrás que pedir un enlace cada vez. En un ordenador compartido, pulsa <strong>«Salir»</strong> al terminar.</li>
+      </ol>
+      <div class="nota">
+        <h3>El enlace vale 15 minutos y una sola vez</h3>
+        <p>Si ha caducado o ya lo usaste, la página te dirá «Ese enlace ya no vale». Pide otro: es un momento.</p>
+      </div>
+      <div class="nota">
+        <h3>Si no te llega el correo</h3>
+        <ul>
+          <li>Mira en <strong>spam</strong> o en <strong>promociones</strong>.</li>
+          <li>Espera un minuto: a veces tarda un poco.</li>
+          <li>Si pides varios seguidos, solo se mandan tres cada 15 minutos. Usa el más reciente.</li>
+          <li>Si sigue sin llegar, puede que ese correo aún no tenga acceso (por seguridad, la página dice lo mismo tenga acceso o no). Escríbenos y te lo damos.</li>
+        </ul>
+        <p>No reenvíes el enlace a nadie. Si te llega uno que no has pedido, bórralo: sin el enlace nadie puede entrar.</p>
+      </div>
+    </section>
+
+    <section class="bloque" id="que-ves" aria-labelledby="t-que-ves">
+      <h2 id="t-que-ves"><span class="num">3.</span>Qué ves</h2>
+      <p>El panel se lee de arriba abajo: primero, si todo va bien; después, las cifras; al final, el detalle. Si tienes contratado más de un servicio, cada uno tiene su pestaña arriba.</p>
+
+      <figure class="maqueta">
+        <div class="pantalla" role="img" aria-label="Ejemplo del panel con datos inventados. Semáforo en ámbar: «Funcionando, pero hay algo que revisar». Este mes: 47 facturas archivadas, 2 por revisar ahora, último envío a la gestoría el 3 de octubre y 11 clientes activos. En la lista, el cliente 017 está en «Revisar (2)», el 023 en «Bien» y el 031 en «Sin movimiento».">
+          <div class="pantalla-barra"><b>Panel de clientes</b><span class="suave">Salir</span></div>
+          <div class="pantalla-cuerpo">
+            <div class="p-semaforo">
+              <span class="luz"></span>
+              <div>
+                <div class="p-titulo">El buzón</div>
+                <div class="p-frase">Funcionando, pero hay algo que revisar: mira «Por revisar» y los avisos.</div>
+              </div>
+            </div>
+            <div class="p-cifras">
+              <div class="p-cifra"><span>Archivadas este mes</span><strong>47</strong></div>
+              <div class="p-cifra"><span>Por revisar ahora</span><strong>2</strong></div>
+              <div class="p-cifra"><span>Último envío a la gestoría</span><strong>3 oct</strong></div>
+              <div class="p-cifra"><span>Clientes activos (30 días)</span><strong>11</strong></div>
+            </div>
+            <div class="p-lista">
+              <div class="p-fila"><code>017</code><span class="estado-fila"><span class="punto ambar"></span>Revisar (2)</span><span class="cuantas">12</span></div>
+              <div class="p-fila"><code>023</code><span class="estado-fila"><span class="punto verde"></span>Bien</span><span class="cuantas">9</span></div>
+              <div class="p-fila"><code>031</code><span class="estado-fila"><span class="punto gris"></span>Sin movimiento</span><span class="cuantas">0</span></div>
+            </div>
+          </div>
+        </div>
+        <figcaption>Así se ve la parte de arriba del panel. Es un ejemplo con datos inventados.</figcaption>
+      </figure>
+
+      <h3>El semáforo («El buzón»)</h3>
+      <p>Arriba del todo. Cada color va siempre con su frase, así que no hace falta fijarse en el color para entenderlo.</p>
+      <ul class="estados">
+        <li class="estado verde">
+          <span class="lampara" aria-hidden="true">✓</span>
+          <div>
+            <p><span class="nombre">Verde</span> · <span class="frase">«Funcionando: todo lo que llega se archiva.»</span></p>
+            <p class="hacer">No tienes que hacer nada.</p>
+          </div>
+        </li>
+        <li class="estado ambar">
+          <span class="lampara" aria-hidden="true">!</span>
+          <div>
+            <p><span class="nombre">Ámbar</span> · <span class="frase">«Funcionando, pero hay algo que revisar: mira «Por revisar» y los avisos.»</span></p>
+            <p class="hacer">El buzón funciona, pero alguna factura espera a que alguien la mire. Es el día a día, no una avería. Se apaga solo cuando ya no queda nada pendiente.</p>
+          </div>
+        </li>
+        <li class="estado rojo">
+          <span class="lampara" aria-hidden="true">×</span>
+          <div>
+            <p><span class="nombre">Rojo</span> · <span class="frase">«Sin noticias del buzón en las últimas 48 horas.»</span></p>
+            <p class="hacer">El buzón lleva dos días sin dar señal. Nos llega el aviso a la vez que a ti y lo estaremos mirando. Si sigue en rojo al día siguiente, llámanos.</p>
+          </div>
+        </li>
+        <li class="estado gris">
+          <span class="lampara" aria-hidden="true">–</span>
+          <div>
+            <p><span class="nombre">Gris</span> · <span class="frase">«Aún no ha llegado ninguna factura.»</span></p>
+            <p class="hacer">Sale al principio, antes de que llegue la primera. Es normal los primeros días.</p>
+          </div>
+        </li>
+      </ul>
+
+      <h3>«Este mes»: las cuatro cifras</h3>
+      <dl class="cifras">
+        <div>
+          <dt>Archivadas este mes</dt>
+          <dd>Las facturas que el buzón ha guardado desde el día 1 de este mes, sumando todos tus clientes.</dd>
+        </div>
+        <div>
+          <dt>Por revisar ahora</dt>
+          <dd>Las facturas que esperan ahora mismo a que alguien las mire. Baja sola a medida que se revisan.</dd>
+        </div>
+        <div>
+          <dt>Último envío a la gestoría</dt>
+          <dd>El día del último envío mensual que te llegó. Si aún no ha habido ninguno, sale una raya (—).</dd>
+        </div>
+        <div>
+          <dt>Clientes activos (30 días)</dt>
+          <dd>Cuántos de tus clientes han tenido movimiento en el buzón en los últimos 30 días.</dd>
+        </div>
+      </dl>
+
+      <h3>La gráfica: «Facturas archivadas por semana»</h3>
+      <p>Una columna por semana, de las últimas ocho. La de la derecha, marcada como <strong>«ahora»</strong>, es la semana en curso: va a medias. Al pasar el ratón por una columna ves su número, y en <strong>«Ver los datos»</strong> tienes todas las semanas en una tabla.</p>
+
+      <h3>«Tus clientes»: la lista por código</h3>
+      <p>Un renglón por cliente, con su <strong>código</strong> (no su nombre), su estado, las facturas archivadas este mes y la fecha de su último aviso. Arriba salen los que tienen algo que revisar; al final, los que llevan tiempo quietos.</p>
+      <ul class="chapas">
+        <li><span class="chapa"><span class="punto ambar" aria-hidden="true"></span>Revisar (2)</span><span>Ese cliente tiene algo pendiente. El número entre paréntesis dice cuántas facturas esperan a que alguien las mire.</span></li>
+        <li><span class="chapa"><span class="punto verde" aria-hidden="true"></span>Bien</span><span>Todo en orden.</span></li>
+        <li><span class="chapa"><span class="punto gris" aria-hidden="true"></span>Sin movimiento</span><span>No ha llegado nada de ese cliente en 30 días. Puede ser normal si recibe pocas facturas; si te extraña, dínoslo y miramos si sus facturas siguen llegando al buzón.</span></li>
+      </ul>
+
+      <h3>«Avisos»</h3>
+      <p>Los últimos problemas, del más nuevo al más viejo, con el código del cliente y el día y la hora. Un aviso <strong>sin código</strong> es de todo el buzón, no de un cliente.</p>
+      <p>Es un historial: un aviso puede seguir en la lista aunque ya esté resuelto. Lo que está pendiente <em>ahora</em> te lo dicen el semáforo, «Por revisar ahora» y la lista de clientes.</p>
+    </section>
+
+    <section class="bloque" id="avisos" aria-labelledby="t-avisos">
+      <h2 id="t-avisos"><span class="num">4.</span>Los avisos más comunes</h2>
+      <p>En todos los casos la factura no se pierde: espera en una lista de revisión hasta que alguien la mira. Si nos escribes por un aviso, dinos el <strong>código del cliente</strong> y la <strong>fecha</strong> que salen debajo. No hace falta ningún nombre.</p>
+
+      <div class="avisos">
+        <article class="aviso">
+          <h3>«Llegó un correo de factura sin el PDF adjunto»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> el proveedor mandó un aviso del tipo «ya tienes tu factura disponible», con un enlace pero sin la factura en PDF. El buzón solo puede guardar lo que llega adjunto.</p>
+          <p><span class="etiqueta">Qué hacer:</span> descarga la factura de la web del proveedor y háznosla llegar. Para que no se repita, pide al proveedor que la mande como PDF adjunto.</p>
+        </article>
+
+        <article class="aviso">
+          <h3>«Una factura llegó en un PDF sin texto: hay que mirarla a mano»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> es un escaneo o una foto dentro de un PDF, sin texto que leer.</p>
+          <p><span class="etiqueta">Qué hacer:</span> nada; la revisamos a mano. Si pasa siempre con el mismo proveedor, pídele la factura original en PDF, no escaneada.</p>
+        </article>
+
+        <article class="aviso">
+          <h3>«Una factura no trae el CIF de quien la emite»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> sin CIF no se puede saber con seguridad quién la emite.</p>
+          <p><span class="etiqueta">Qué hacer:</span> la revisamos. Si sabes de qué proveedor es, dínoslo y se resuelve antes.</p>
+        </article>
+
+        <article class="aviso">
+          <h3>«Factura de un proveedor nuevo: falta darle el visto bueno»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> es la primera factura de un proveedor que no estaba en la lista de ese cliente. Espera a propósito: puede no ser del negocio (otro local, un gasto personal).</p>
+          <p><span class="etiqueta">Qué hacer:</span> confírmanos si ese proveedor es de tu cliente y qué tipo de gasto es. Desde entonces, sus facturas se archivan solas.</p>
+        </article>
+
+        <article class="aviso">
+          <h3>«Factura de un proveedor que está desactivado: actívalo si es del negocio»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> ese proveedor se marcó en su día como «no es de este negocio».</p>
+          <p><span class="etiqueta">Qué hacer:</span> si ahora sí lo es, dínoslo y lo activamos. Si no, no hace falta nada.</p>
+        </article>
+
+        <article class="aviso">
+          <h3>«A una factura no se le encuentra la fecha» · «Un albarán no trae número»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> le falta un dato necesario para guardarla bien.</p>
+          <p><span class="etiqueta">Qué hacer:</span> nada; la revisamos a mano.</p>
+        </article>
+
+        <article class="aviso">
+          <h3>«Los importes de una factura no cuadran: hay que revisarla»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> la base más el IVA no da el total, o un importe no está escrito en la factura. Nunca se archiva una factura con importes dudosos: mejor un hueco que un dato falso en la contabilidad.</p>
+          <p><span class="etiqueta">Qué hacer:</span> nada; la revisamos a mano.</p>
+        </article>
+
+        <article class="aviso">
+          <h3>«Una factura necesita revisión»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> otro motivo, poco habitual.</p>
+          <p><span class="etiqueta">Qué hacer:</span> nada; la revisamos nosotros.</p>
+        </article>
+
+        <article class="aviso general">
+          <h3>«El buzón ha tenido un error y se está revisando»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> algo ha fallado en el propio buzón, no en una factura. Nos llega el aviso al momento.</p>
+          <p><span class="etiqueta">Qué hacer:</span> nada. Se apaga solo en cuanto el buzón vuelve a archivar con normalidad.</p>
+        </article>
+
+        <article class="aviso general">
+          <h3>«El buzón no puede leer el correo ahora mismo: se está arreglando»</h3>
+          <p><span class="etiqueta">Qué pasa:</span> el buzón ha perdido el permiso para leer el correo. Suele pasar si alguien cambia la contraseña de esa cuenta o le quita permisos.</p>
+          <p><span class="etiqueta">Qué hacer:</span> si alguien ha cambiado hace poco la contraseña de ese correo, dínoslo: habrá que volver a conectarlo.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="bloque" id="que-no-hay" aria-labelledby="t-que-no-hay">
+      <h2 id="t-que-no-hay"><span class="num">5.</span>Qué no hay en el panel</h2>
+      <div class="dos">
+        <div>
+          <p>El panel está hecho para saber lo mínimo. En él <strong>no</strong> hay:</p>
+          <ul class="no">
+            <li>facturas, ni su contenido;</li>
+            <li>importes;</li>
+            <li>nombres de tus clientes ni de sus proveedores;</li>
+            <li>CIF, NIF ni números de factura;</li>
+            <li>correos ni asuntos de los mensajes.</li>
+          </ul>
+          <p>Tus clientes salen por su <strong>código</strong> (el número de cliente que usáis vosotros). Solo tú sabes cuál es cuál: el panel no lo sabe.</p>
+        </div>
+        <div class="caja-acento">
+          <h3>Entonces, ¿dónde están las facturas?</h3>
+          <p>En Google Drive, ordenadas por año y mes, junto con la hoja de cálculo donde se apuntan sus datos: <span class="hueco">[DÓNDE ESTÁN LAS FACTURAS]</span>.</p>
+          <p>Y una vez al mes te llegan por correo, con su desglose para la contabilidad.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="bloque" id="privacidad" aria-labelledby="t-privacidad">
+      <h2 id="t-privacidad"><span class="num">6.</span>Privacidad en tres líneas</h2>
+      <ol class="tres">
+        <li><span><strong>Solo tú ves lo tuyo.</strong> Lo garantiza la propia base de datos, no solo el programa.</span></li>
+        <li><span><strong>Los avisos se borran solos a los 12 meses.</strong></span></li>
+        <li><span><strong>Si dejas el servicio, se borra todo lo tuyo de una vez:</strong> avisos, accesos y llaves.</span></li>
+      </ol>
+      <p class="suave">Todo lo que hacemos con los datos de tus clientes está por escrito en el contrato de encargo del tratamiento.</p>
+    </section>
+
+    <section class="bloque" id="contacto" aria-labelledby="t-contacto">
+      <h2 id="t-contacto"><span class="num">7.</span>¿Dudas? A quién llamar</h2>
+      <div class="contacto">
+        <p class="quien"><span class="hueco">[TU CONTACTO]</span></p>
+        <p>Teléfono: <span class="hueco">[TELÉFONO]</span> · Correo: <span class="hueco">[CORREO]</span></p>
+        <p class="suave">Horario: <span class="hueco">[HORARIO]</span></p>
+      </div>
+      <div class="preguntas">
+        <h3>¿Puedo dar acceso a alguien más de mi equipo?</h3>
+        <p>Sí: mándanos su correo y le damos acceso. Avísanos también cuando alguien deje de necesitarlo, para quitárselo.</p>
+        <h3>El semáforo está en ámbar. ¿Es grave?</h3>
+        <p>No. Quiere decir que alguna factura espera a que alguien la mire. Lo que hay que vigilar es el rojo.</p>
+        <h3>¿Por qué no veo los nombres de mis clientes?</h3>
+        <p>Para que el panel no guarde datos de tus clientes. Sale su código, y tú sabes quién es cada uno.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Panel de clientes · Guía para <span class="hueco">[NOMBRE DE LA GESTORÍA]</span> · <span class="hueco">[FECHA]</span></p>
+  </footer>
+
+</div>
+</body>
+</html>

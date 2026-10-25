@@ -26,6 +26,10 @@ n8n (buzón de facturas) ──POST /api/avisos──▶  panel  ◀── la ge
    mandar correos a cualquiera.
 3. Al abrir el enlace queda dentro 30 días (cookie de sesión).
 
+El correo (`src/lib/correo-plantilla.ts`) va en texto y en HTML, con un botón
+y la dirección escrita por si el botón no se ve. No carga nada de fuera: ni
+imágenes ni píxeles de seguimiento.
+
 No hay registro abierto: las cuentas las creas tú en `/admin` («Dar acceso»).
 Tu cuenta (`PANEL_ADMIN_EMAIL`) se crea sola al arrancar.
 
